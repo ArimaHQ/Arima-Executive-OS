@@ -326,3 +326,61 @@ def test_agent_repository_pagination_filters_and_archive_defaults() -> None:
             assert await agents.get_active_default() is None
 
     asyncio.run(exercise())
+
+
+def test_agent_bootstrap_backfills_pre_bootstrap_workspaces_without_unrevoking() -> None:
+    from sqlalchemy import select
+
+    from app.database.models import Tenant, Workspace, WorkspaceAgentGrant
+
+    async def exercise() -> None:
+        async with sqlite_session() as session:
+            owners = [
+                User(
+                    email=f"early-{index}@example.com",
+                    hashed_password="not-used",
+                    first_name="Early",
+                    last_name=str(index),
+                )
+                for index in range(3)
+            ]
+            session.add_all(owners)
+            await session.flush()
+            workspaces = [
+                Workspace(name=f"Early {index}", tenant=Tenant(name=f"Early {index}"), owner=owner)
+                for index, owner in enumerate(owners)
+            ]
+            session.add_all(workspaces)
+            await session.commit()
+
+            first = await bootstrap_agent_platform(session, created_by_id=owners[0].id)
+            assert set(first.backfilled_workspace_ids) == {workspace.id for workspace in workspaces}
+
+            revoked = await session.scalar(
+                select(WorkspaceAgentGrant).where(
+                    WorkspaceAgentGrant.workspace_id == workspaces[1].id
+                )
+            )
+            assert revoked is not None
+            revoked.revoked_at = datetime.now(UTC)
+            await session.commit()
+
+            second = await bootstrap_agent_platform(session, created_by_id=owners[0].id)
+            assert second.backfilled_workspace_ids == ()
+            grants = (
+                await session.scalars(
+                    select(WorkspaceAgentGrant).where(
+                        WorkspaceAgentGrant.agent_id == first.agent.id
+                    )
+                )
+            ).all()
+            assert len(grants) == 3
+            still_revoked = next(g for g in grants if g.workspace_id == workspaces[1].id)
+            assert still_revoked.revoked_at is not None
+            assert all(
+                grant.revoked_at is None
+                for grant in grants
+                if grant.workspace_id != workspaces[1].id
+            )
+
+    asyncio.run(exercise())

@@ -113,11 +113,15 @@ class OrchestrationPlanner(HealthContract):
             "volatile",
             "volatility",
             "market cycle",
+            "explain",
+            "why ",
+            "in simple terms",
             "عوامل",
             "تأثیر",
             "تاثیر",
             "نوسان",
             "چرخه",
+            "چرا",
         )
         if any(marker in value for marker in conceptual_markers):
             return False
@@ -130,6 +134,7 @@ class OrchestrationPlanner(HealthContract):
             "today",
             "how much",
             "trading",
+            "doing",
             "فعلی",
             "کنونی",
             "الان",
@@ -138,14 +143,17 @@ class OrchestrationPlanner(HealthContract):
             "چنده",
             "چقدر",
             "معامله",
+            "قیمت",
         )
         if any(marker in value for marker in explicit_live_markers):
             return True
-        return any(
-            phrase in value
-            for phrase in (
-                "what is the price",
-                "what's the price",
-                "what’s the price",
-            )
-        )
+        if re.search(r"\bprice\b", value):
+            return True
+        # "What's FTSE 100?" is a colloquial level request; the uncontracted
+        # "What is Bitcoin?" stays a definitional question.
+        bare = re.fullmatch(r"\s*what(?:'|’)s\s+(?:the\s+)?(.+?)\s*[?.!]*\s*", value)
+        if bare is None:
+            return False
+        remainder = bare.group(1)
+        resolved = InstrumentResolver().resolve(remainder)
+        return resolved is not None and len(remainder.split()) <= 3

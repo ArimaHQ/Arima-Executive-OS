@@ -1,3 +1,4 @@
+import json
 from functools import lru_cache
 from typing import Annotated, Any, Literal
 from urllib.parse import urlsplit
@@ -47,12 +48,20 @@ class Settings(BaseSettings):
     microsoft_redirect_uri: str = ""
     microsoft_integration_enabled: bool = False
     frontend_url: str = "http://localhost:3000"
-    cors_origins: list[str] = Field(
+    # Delimited list settings accept either comma-separated values (the
+    # documented .env format) or a JSON array; see parse_delimited_list.
+    cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:3000"]
     )
-    trusted_hosts: list[str] = Field(default_factory=lambda: ["*"])
-    trusted_proxy_ips: list[str] = Field(default_factory=list)
-    platform_operator_user_ids: list[UUID] = Field(default_factory=list)
+    trusted_hosts: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["*"]
+    )
+    trusted_proxy_ips: Annotated[list[str], NoDecode] = Field(
+        default_factory=list
+    )
+    platform_operator_user_ids: Annotated[list[UUID], NoDecode] = Field(
+        default_factory=list
+    )
     # Founder access is an explicit, server-side email allowlist. An empty
     # value is intentionally handled as deny-all by the dependency rather
     # than preventing an otherwise healthy deployment from starting.
@@ -258,6 +267,14 @@ class Settings(BaseSettings):
     @classmethod
     def parse_delimited_list(cls, value: Any) -> Any:
         if isinstance(value, str):
+            if value.strip().startswith("["):
+                try:
+                    decoded = json.loads(value)
+                except json.JSONDecodeError as error:
+                    raise ValueError("List setting is not a valid JSON array") from error
+                if not isinstance(decoded, list):
+                    raise ValueError("List setting must be a JSON array")
+                return decoded
             return [item.strip() for item in value.split(",") if item.strip()]
         return value
 

@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -32,14 +32,26 @@ def configure_default_voice_agent(
             user = await UserRepository(session).get_by_email(email)
             assert user is not None
             agent = await bootstrap_agent_platform(session, created_by_id=user.id)
+            workspace = await WorkspaceRepository(session).get_by_owner(user.id)
+            assert workspace is not None
             if grant:
-                workspace = await WorkspaceRepository(session).get_by_owner(user.id)
-                assert workspace is not None
                 await AgentGrantService(session).grant(
                     workspace_id=workspace.id,
                     agent_id=agent.agent.id,
                     actor=user,
                 )
+            else:
+                # Bootstrap backfills pre-existing workspaces, so an explicit
+                # revocation is the remaining way to lack an active grant.
+                existing = await session.scalar(
+                    select(WorkspaceAgentGrant).where(
+                        WorkspaceAgentGrant.workspace_id == workspace.id,
+                        WorkspaceAgentGrant.agent_id == agent.agent.id,
+                    )
+                )
+                assert existing is not None
+                existing.revoked_at = datetime.now(UTC)
+                await session.commit()
 
     asyncio.run(configure())
 

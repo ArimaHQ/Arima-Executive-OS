@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
-from app.database.models import Role, User, UserRole
+from app.database.models import Role, User, UserRole, Workspace, WorkspaceAgentGrant
 from app.database.models.agent import (
     AgentDefinition,
     AgentRiskLevel,
@@ -116,6 +116,7 @@ FOUNDATION_TOOLS: tuple[dict[str, object], ...] = (
 class AgentBootstrapResult:
     agent: AgentDefinition
     tools: tuple[AgentToolDefinition, ...]
+    backfilled_workspace_ids: tuple[UUID, ...] = ()
 
 
 async def bootstrap_configured_agent_platform(
@@ -219,11 +220,54 @@ async def bootstrap_agent_platform(
             await tools.update(tool, managed_tool_fields)
         bootstrapped_tools.append(tool)
 
+    backfilled = await _backfill_default_agent_grants(
+        session,
+        agent_id=default_agent.id,
+        granted_by_id=created_by_id,
+    )
+
     await session.commit()
     return AgentBootstrapResult(
         agent=default_agent,
         tools=tuple(bootstrapped_tools),
+        backfilled_workspace_ids=backfilled,
     )
+
+
+async def _backfill_default_agent_grants(
+    session: AsyncSession,
+    *,
+    agent_id: UUID,
+    granted_by_id: UUID,
+) -> tuple[UUID, ...]:
+    """Apply the registration-time default-agent grant to older workspaces.
+
+    Registration grants the active default agent to every new workspace, but
+    workspaces created before the platform was bootstrapped never received
+    it. Only workspaces with no grant row for this agent are backfilled; a
+    revoked grant is a deliberate decision and is left revoked.
+    """
+    already_granted = select(WorkspaceAgentGrant.workspace_id).where(
+        WorkspaceAgentGrant.agent_id == agent_id
+    )
+    workspace_ids = tuple(
+        (
+            await session.scalars(
+                select(Workspace.id)
+                .where(Workspace.id.not_in(already_granted))
+                .order_by(Workspace.created_at, Workspace.id)
+            )
+        ).all()
+    )
+    session.add_all(
+        WorkspaceAgentGrant(
+            workspace_id=workspace_id,
+            agent_id=agent_id,
+            granted_by_id=granted_by_id,
+        )
+        for workspace_id in workspace_ids
+    )
+    return workspace_ids
 
 
 async def _main() -> None:

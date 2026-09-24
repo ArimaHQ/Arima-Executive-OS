@@ -1,0 +1,87 @@
+{
+  "started_at": "2026-09-24T16:23:55.305354+00:00",
+  "base_url": "http://127.0.0.1:8765",
+  "phase": "phase1",
+  "checks": [
+    {
+      "name": "readiness",
+      "passed": true,
+      "detail": "{\"status\":\"ready\",\"database\":\"ok\"}"
+    },
+    {
+      "name": "register operator@arima-audit.com",
+      "passed": true,
+      "detail": "201"
+    },
+    {
+      "name": "unverified login rejected operator@arima-audit.com",
+      "passed": true,
+      "detail": "403"
+    },
+    {
+      "name": "verification email delivered operator@arima-audit.com",
+      "passed": true,
+      "detail": "True"
+    },
+    {
+      "name": "verify email operator@arima-audit.com",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "login operator",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "register founder@arima-audit.com",
+      "passed": true,
+      "detail": "201"
+    },
+    {
+      "name": "unverified login rejected founder@arima-audit.com",
+      "passed": true,
+      "detail": "403"
+    },
+    {
+      "name": "verification email delivered founder@arima-audit.com",
+      "passed": true,
+      "detail": "True"
+    },
+    {
+      "name": "verify email founder@arima-audit.com",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "login founder",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "register early.client.162355@arima-audit.com",
+      "passed": true,
+      "detail": "201"
+    },
+    {
+      "name": "unverified login rejected early.client.162355@arima-audit.com",
+      "passed": true,
+      "detail": "403"
+    },
+    {
+      "name": "verification email delivered early.client.162355@arima-audit.com",
+      "passed": true,
+      "detail": "True"
+    },
+    {
+      "name": "verify email early.client.162355@arima-audit.com",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "login early_client",
+      "passed": true,
+      "detail": "200"
+    }
+  ]
+}

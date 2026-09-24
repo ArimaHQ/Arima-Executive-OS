@@ -1,0 +1,207 @@
+{
+  "started_at": "2026-09-24T16:24:00.835496+00:00",
+  "base_url": "http://127.0.0.1:8765",
+  "phase": "phase2",
+  "checks": [
+    {
+      "name": "operator login",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "platform operator assigns administrator",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "client cannot self-elevate",
+      "passed": true,
+      "detail": "403"
+    },
+    {
+      "name": "agent bootstrap under founder admin",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "register client.a.162400@arima-audit.com",
+      "passed": true,
+      "detail": "201"
+    },
+    {
+      "name": "unverified login rejected client.a.162400@arima-audit.com",
+      "passed": true,
+      "detail": "403"
+    },
+    {
+      "name": "verification email delivered client.a.162400@arima-audit.com",
+      "passed": true,
+      "detail": "True"
+    },
+    {
+      "name": "verify email client.a.162400@arima-audit.com",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "client a login",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "register client.b.162400@arima-audit.com",
+      "passed": true,
+      "detail": "201"
+    },
+    {
+      "name": "unverified login rejected client.b.162400@arima-audit.com",
+      "passed": true,
+      "detail": "403"
+    },
+    {
+      "name": "verification email delivered client.b.162400@arima-audit.com",
+      "passed": true,
+      "detail": "True"
+    },
+    {
+      "name": "verify email client.b.162400@arima-audit.com",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "client b login",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "founder login pre-MFA",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "founder MFA gate is production-only (development allows pre-MFA)",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "founder MFA enrollment",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "founder MFA confirmation",
+      "passed": true,
+      "detail": "204"
+    },
+    {
+      "name": "founder login with TOTP",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "founder system-health",
+      "passed": true,
+      "detail": "['backend', 'database', 'email_configuration', 'voice']"
+    },
+    {
+      "name": "founder data-feeds",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "client denied founder control",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "client A creates project",
+      "passed": true,
+      "detail": "201"
+    },
+    {
+      "name": "client B cannot read client A project",
+      "passed": true,
+      "detail": "404"
+    },
+    {
+      "name": "client B listing excludes A project",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "market availability requires auth",
+      "passed": true,
+      "detail": "401"
+    },
+    {
+      "name": "market availability non-price",
+      "passed": true,
+      "detail": "{\"symbols\":[{\"symbol\":\"XAUUSD\",\"available\":false,\"provider\":null,\"reason\":\"No verified market data provider is configured.\"},{\"symbol\":\"BTCUSD\",\"available\":false,\"provider\":null,\"reason\":\"No verified "
+    },
+    {
+      "name": "market route absent /api/v1/market/price",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "market route absent /api/v1/market/quote",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "market route absent /api/v1/market/candles",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "market route absent /api/v1/market/time-series",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "client A voice session",
+      "passed": true,
+      "detail": "201"
+    },
+    {
+      "name": "gold question answered through Brain path",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "gold answer does not fabricate a price",
+      "passed": true,
+      "detail": "A verified XAU/USD price is currently unavailable."
+    },
+    {
+      "name": "client B cannot read client A voice session",
+      "passed": true,
+      "detail": "403"
+    },
+    {
+      "name": "early client login",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "client registered before agent bootstrap gets a voice session",
+      "passed": true,
+      "detail": "201 {\"session_id\":\"252800f0-fd1e-4f13-9fdc-d6e61ad996e8\",\"user_id\":\"488dae15-2dba-4600-aa2f-56f08b2cfc1c\",\"conversation_id\":\"e1479b64-b06e-43e6-bfae-84f5da939a22\",\"run_id\":null,\"correlation_id\":\"405114a7-"
+    },
+    {
+      "name": "client registered before agent bootstrap can use the Brain",
+      "passed": true,
+      "detail": "200 {\"session_id\":\"252800f0-fd1e-4f13-9fdc-d6e61ad996e8\",\"correlation_id\":\"aff8f5ec-9df7-4e66-8633-5e1864bd7573\",\"state\":\"completed\",\"transcript\":\"What should I focus on today?\",\"response_text\":\"Mock resp"
+    },
+    {
+      "name": "refresh rotates session",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "refresh token replay rejected",
+      "passed": true,
+      "detail": "401"
+    }
+  ]
+}

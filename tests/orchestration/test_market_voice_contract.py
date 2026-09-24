@@ -26,8 +26,9 @@ def action(*, success: bool, data: dict[str, object] | None = None) -> ExecutedA
     )
 
 
-def verified_quote() -> dict[str, object]:
+def verified_quote(instrument: str = "BTCUSD") -> dict[str, object]:
     return {
+        "instrument": instrument,
         "price": "101234.50",
         "provider": "twelve_data",
         "source": "twelve_data_api",
@@ -63,7 +64,9 @@ def test_language_switches_follow_each_current_request() -> None:
     [("en", "verified BTC/USD price"), ("fa", "قیمت تأییدشده")],
 )
 def test_verified_quote_is_localized_and_evidence_backed(language: str, expected: str) -> None:
-    response = market_response([action(success=True, data=verified_quote())], language=language)
+    response = market_response(
+        [action(success=True, data=verified_quote())], language=language, instrument="BTCUSD"
+    )
     assert response is not None
     assert expected in response
     assert "101234.50" in response
@@ -72,10 +75,10 @@ def test_verified_quote_is_localized_and_evidence_backed(language: str, expected
 
 @pytest.mark.parametrize(
     ("language", "expected"),
-    [("en", "A verified BTC price is currently unavailable."), ("fa", "قیمت تأییدشدهٔ بیت‌کوین")],
+    [("en", "A verified BTC/USD price is currently unavailable."), ("fa", "قیمت تأییدشدهٔ بیت‌کوین")],
 )
 def test_unavailable_market_is_explicit_and_localized(language: str, expected: str) -> None:
-    response = market_response([action(success=False)], language=language)
+    response = market_response([action(success=False)], language=language, instrument="BTCUSD")
     assert response == expected or expected in response
     assert "125000" not in response
     assert "8420" not in response
@@ -84,8 +87,8 @@ def test_unavailable_market_is_explicit_and_localized(language: str, expected: s
 def test_missing_market_provenance_fails_closed() -> None:
     incomplete = verified_quote()
     incomplete.pop("evidence")
-    response = market_response([action(success=True, data=incomplete)], language="en")
-    assert response == "A verified BTC price is currently unavailable."
+    response = market_response([action(success=True, data=incomplete)], language="en", instrument="BTCUSD")
+    assert response == "A verified BTC/USD price is currently unavailable."
 
 
 def test_client_supplied_fake_price_is_not_a_market_quote() -> None:
@@ -96,8 +99,40 @@ def test_client_supplied_fake_price_is_not_a_market_quote() -> None:
     fake = verified_quote()
     fake["price"] = "125000"
     fake["verification_state"] = "unverified"
-    response = market_response([action(success=True, data=fake)], language="en")
-    assert response == "A verified BTC price is currently unavailable."
+    response = market_response([action(success=True, data=fake)], language="en", instrument="BTCUSD")
+    assert response == "A verified BTC/USD price is currently unavailable."
+
+
+@pytest.mark.parametrize(
+    ("instrument", "label"),
+    [("XAUUSD", "XAU/USD"), ("AAPL", "Apple Inc."), ("FTSE100", "FTSE 100 Index")],
+)
+def test_unavailable_market_names_the_requested_instrument(instrument: str, label: str) -> None:
+    response = market_response([action(success=False)], language="en", instrument=instrument)
+    assert response == f"A verified {label} price is currently unavailable."
+    assert "BTC" not in response
+
+
+def test_verified_quote_is_labelled_with_its_own_instrument() -> None:
+    response = market_response(
+        [action(success=True, data=verified_quote("XAUUSD"))], language="en", instrument="XAUUSD"
+    )
+    assert response is not None
+    assert response.startswith("The verified XAU/USD price is 101234.50 USD")
+    assert "BTC" not in response
+
+
+def test_quote_for_a_different_instrument_is_never_relabelled() -> None:
+    response = market_response(
+        [action(success=True, data=verified_quote("BTCUSD"))], language="en", instrument="XAUUSD"
+    )
+    assert response == "A verified XAU/USD price is currently unavailable."
+    assert "101234.50" not in response
+
+
+def test_gold_is_named_in_persian_unavailable_response() -> None:
+    response = market_response([action(success=False)], language="fa", instrument="XAUUSD")
+    assert response is not None and "طلا" in response and "بیت" not in response
 
 
 def test_provider_prompt_carries_current_request_language() -> None:

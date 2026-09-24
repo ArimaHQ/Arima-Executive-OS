@@ -51,6 +51,19 @@ def test_asset_discussion_does_not_invoke_market_tool() -> None:
         assert not any(step.name == "market.current_price" for step in plan.steps)
 
 
+def test_definitional_and_explanatory_asset_questions_stay_conversational() -> None:
+    planner = OrchestrationPlanner()
+    for content in (
+        "What is Bitcoin?",
+        "Explain how gold is priced.",
+        "Why did Bitcoin's price fall?",
+        "Tell me about the FTSE 100 in simple terms.",
+        "چرا قیمت طلا بالا رفت؟",
+    ):
+        plan = planner.plan(IntentEngine().detect(OrchestrationRequest(content=content)), content)
+        assert not any(step.name == "market.current_price" for step in plan.steps), content
+
+
 def test_live_market_requests_invoke_market_tool_in_both_languages() -> None:
     planner = OrchestrationPlanner()
     for content in (

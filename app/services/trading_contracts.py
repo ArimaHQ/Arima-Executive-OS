@@ -11,6 +11,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.execution_policy import EXECUTION_POLICY
 from app.database.models import TradeExecution, User, Workspace, WorkspaceMembership, WithdrawalCircuitBreaker, WithdrawalCircuitState
 from app.quant.contracts import ResearchSignal
 from app.services.audit import record_audit
@@ -77,6 +78,7 @@ class ExecutionPermission:
 class DisabledQTradeExecution:
     async def submit_order(self, *, workspace_id: UUID, account_id: UUID, asset: str, quantity: Decimal) -> object:
         del workspace_id, account_id, asset, quantity
+        EXECUTION_POLICY.require_live_execution(action="QTRADE order submission")
         raise RuntimeError("QTRADE execution is not enabled")
 
 
@@ -107,6 +109,7 @@ class QTradeExecutionService:
             raise RiskValidationError("QTrade requires the concrete financial-context authorizer")
         self.context_authorizer = context_authorizer
         if execution_enabled:
+            EXECUTION_POLICY.require_live_execution(action="QTRADE execution")
             raise RuntimeError("QTRADE execution is not enabled in this release")
         self.execution_enabled = False
         self.dry_run = QTradeDryRunAdapter()
@@ -184,7 +187,7 @@ class QTradeExecutionService:
             record.state = ExecutionState.BLOCKED.value
             record.rejection_reason = str(error)
             record.dry_run_result = {"status": "NOT_EXECUTED", "reason": str(error)}
-            record_audit(self.session, actor_id=actor_id, action=AuditAction.STATUS_CHANGE, entity=AuditEntity.ACCOUNT, entity_id=record.id, event_type="QTRADE_EXECUTION_DECISION", event_metadata={"tenant_id": str(tenant_id), "workspace_id": str(signal.workspace_id), "account_id": str(signal.account_id), "state": record.state, "circuit_state": "unavailable", "execution_permission": False, "reason": str(error)})
+            record_audit(self.session, actor_id=actor_id, action=AuditAction.STATUS_CHANGE, entity=AuditEntity.ACCOUNT, entity_id=record.id, event_type="QTRADE_EXECUTION_DECISION", event_metadata={"tenant_id": str(tenant_id), "workspace_id": str(signal.workspace_id), "account_id": str(signal.account_id), "state": record.state, "circuit_state": "unavailable", "execution_permission": False, "reason": str(error), "execution_policy": EXECUTION_POLICY.as_dict()})
             await self.session.commit()
             return record
         record.circuit_state = circuit.value
@@ -227,7 +230,7 @@ class QTradeExecutionService:
             record.state = ExecutionState.APPROVED.value
             record.execution_permission = True
         record.risk_decision = record.risk_decision or "not_evaluated"
-        record_audit(self.session, actor_id=actor_id, action=AuditAction.STATUS_CHANGE, entity=AuditEntity.ACCOUNT, entity_id=record.id, event_type="QTRADE_EXECUTION_DECISION", event_metadata={"tenant_id": str(tenant_id), "workspace_id": str(signal.workspace_id), "account_id": str(signal.account_id), "asset": signal.asset, "strategy": signal.strategy, "state": record.state, "risk_decision": record.risk_decision, "risk_inputs": (record.dry_run_result or {}).get("risk_inputs"), "circuit_state": circuit.value, "execution_permission": record.execution_permission, "reason": record.rejection_reason})
+        record_audit(self.session, actor_id=actor_id, action=AuditAction.STATUS_CHANGE, entity=AuditEntity.ACCOUNT, entity_id=record.id, event_type="QTRADE_EXECUTION_DECISION", event_metadata={"tenant_id": str(tenant_id), "workspace_id": str(signal.workspace_id), "account_id": str(signal.account_id), "asset": signal.asset, "strategy": signal.strategy, "state": record.state, "risk_decision": record.risk_decision, "risk_inputs": (record.dry_run_result or {}).get("risk_inputs"), "circuit_state": circuit.value, "execution_permission": record.execution_permission, "reason": record.rejection_reason, "execution_policy": EXECUTION_POLICY.as_dict()})
         await self.session.commit()
         return record
 

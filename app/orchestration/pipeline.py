@@ -226,8 +226,18 @@ class OrchestrationPipeline(HealthContract):
             ),
             request_mode=self.provider_prompt.request_mode(context.request.content),
         )
+        market_step = next(
+            (step for step in plan.steps if step.name == "market.current_price"),
+            None,
+        )
         deterministic_market_response = market_response(
-            actions, language=detect_response_language(context.request.content)
+            actions,
+            language=detect_response_language(context.request.content),
+            instrument=(
+                str(market_step.payload.get("instrument"))
+                if market_step is not None and market_step.payload.get("instrument")
+                else None
+            ),
         )
         if deterministic_market_response is not None:
             validated = self.response_validator.validate(

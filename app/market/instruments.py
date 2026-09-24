@@ -61,6 +61,24 @@ _CATALOG: tuple[tuple[CanonicalInstrumentRequest, tuple[str, ...]], ...] = (
 )
 
 
+def describe_instrument(canonical: str) -> CanonicalInstrumentRequest | None:
+    """Return the catalog identity for a canonical symbol, if it is catalogued."""
+    return next(
+        (request for request, _ in _CATALOG if request.canonical.value == canonical),
+        None,
+    )
+
+
+def instrument_label(canonical: str) -> str:
+    """Human label: ``BASE/QUOTE`` for pairs, otherwise the catalog name."""
+    request = describe_instrument(canonical)
+    if request is None:
+        return canonical
+    if request.base_currency and request.quote_currency:
+        return f"{request.base_currency}/{request.quote_currency}"
+    return request.name
+
+
 class InstrumentResolver:
     def resolve(self, text: str) -> CanonicalInstrumentRequest | None:
         value = re.sub(r"[^\w/& ]+", " ", text.casefold()).replace("\u200c", " ")

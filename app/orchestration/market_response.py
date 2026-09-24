@@ -4,6 +4,7 @@ from decimal import Decimal, InvalidOperation
 import re
 from typing import Any
 
+from app.market.instruments import instrument_label
 from app.orchestration.schemas import ExecutedAction
 
 _ARABIC_SCRIPT = re.compile(r"[\u0600-\u06ff]")
@@ -35,10 +36,17 @@ def detect_response_language(text: str) -> str:
     return "en"
 
 
+_PERSIAN_LABELS = {"BTCUSD": "بیت‌کوین", "XAUUSD": "طلا"}
+
+
 def market_response(
-    actions: list[ExecutedAction], *, language: str
+    actions: list[ExecutedAction], *, language: str, instrument: str | None = None
 ) -> str | None:
-    """Build a deterministic, evidence-backed response for market requests."""
+    """Build a deterministic, evidence-backed response for market requests.
+
+    ``instrument`` is the canonical symbol the plan requested. A verified quote
+    for any other instrument is treated as unavailable rather than relabelled.
+    """
     action = next(
         (item for item in actions if item.name == "market.current_price"),
         None,
@@ -47,8 +55,12 @@ def market_response(
         return None
 
     data = action.output.get("data") if action.success else None
-    if not _verified_quote(data):
-        return _unavailable(language)
+    if not _verified_quote(data) or (
+        instrument is not None
+        and isinstance(data, dict)
+        and data.get("instrument") != instrument
+    ):
+        return _unavailable(language, instrument)
 
     assert isinstance(data, dict)
     evidence = data["evidence"]
@@ -56,13 +68,14 @@ def market_response(
     price = str(data["price"])
     provider = str(data["provider"])
     evidence_id = str(evidence["evidence_id"])
+    label = instrument_label(str(data["instrument"]))
     if language == "fa":
         return (
-            f"قیمت تأییدشدهٔ BTC/USD برابر {price} دلار است؛ "
+            f"قیمت تأییدشدهٔ {label} برابر {price} دلار است؛ "
             f"این داده توسط {provider} ارائه شده است. [evidence:{evidence_id}]"
         )
     return (
-        f"The verified BTC/USD price is {price} USD, provided by "
+        f"The verified {label} price is {price} USD, provided by "
         f"{provider}. [evidence:{evidence_id}]"
     )
 
@@ -71,6 +84,7 @@ def _verified_quote(data: Any) -> bool:
     if not isinstance(data, dict):
         return False
     required = (
+        data.get("instrument"),
         data.get("price"),
         data.get("provider"),
         data.get("source"),
@@ -94,7 +108,9 @@ def _verified_quote(data: Any) -> bool:
         return False
 
 
-def _unavailable(language: str) -> str:
+def _unavailable(language: str, instrument: str | None) -> str:
     if language == "fa":
-        return "قیمت تأییدشدهٔ بیت‌کوین در حال حاضر در دسترس نیست."
-    return "A verified BTC price is currently unavailable."
+        label = _PERSIAN_LABELS.get(instrument or "", instrument_label(instrument) if instrument else "بازار")
+        return f"قیمت تأییدشدهٔ {label} در حال حاضر در دسترس نیست."
+    label = instrument_label(instrument) if instrument else "market"
+    return f"A verified {label} price is currently unavailable."
