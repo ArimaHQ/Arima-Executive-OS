@@ -22,6 +22,8 @@ from app.api.v1.routes import (
     research,
     withdrawal_intake,
     documents,
+    knowledge,
+    laya,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -47,3 +49,5 @@ api_router.include_router(research.router)
 api_router.include_router(telegram.router)
 api_router.include_router(withdrawal_intake.router)
 api_router.include_router(documents.router)
+api_router.include_router(knowledge.router)
+api_router.include_router(laya.router)

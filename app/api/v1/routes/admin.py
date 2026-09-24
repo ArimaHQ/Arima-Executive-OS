@@ -30,6 +30,11 @@ from app.services.audit import record_audit
 from app.services.voice_authorization_diagnostic import (
     VoiceAuthorizationDiagnosticService,
 )
+from app.core.execution_policy import EXECUTION_POLICY
+from app.laya.schemas import LayaTaskCreate, LayaTaskRead
+from app.laya.service import LayaConflictError, LayaService
+from app.schemas.brain import BrainStatus
+from app.services.brain_status import BrainStatusService
 
 router = APIRouter(prefix="/admin", tags=["administration"])
 SessionDependency = Annotated[AsyncSession, Depends(get_session)]
@@ -199,3 +204,54 @@ def _request_correlation_id(request: Request) -> UUID:
         return UUID(str(request.state.correlation_id))
     except (AttributeError, TypeError, ValueError):
         return uuid4()
+
+
+@router.get("/founder/brain/status", response_model=BrainStatus)
+async def founder_brain_status(
+    session: SessionDependency,
+    current_user: FounderControlUser,
+) -> BrainStatus:
+    """Jarvis: one view over the Brain, its memory, providers, and Laya."""
+    del current_user
+    return await BrainStatusService(session).status()
+
+
+@router.get("/founder/execution-policy")
+async def founder_execution_policy(
+    current_user: FounderControlUser,
+) -> dict[str, object]:
+    del current_user
+    return EXECUTION_POLICY.as_dict()
+
+
+@router.post(
+    "/founder/brain/gaps/{gap_code}/task",
+    response_model=LayaTaskRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def founder_gap_to_laya_task(
+    gap_code: str,
+    request: Request,
+    session: SessionDependency,
+    current_user: FounderControlUser,
+) -> LayaTaskRead:
+    """Jarvis hands a currently reported gap to Laya; it never acts directly."""
+    require_valid_csrf(request)
+    brain = await BrainStatusService(session).status()
+    gap = next((item for item in brain.gaps if item.code == gap_code), None)
+    if gap is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Gap is not currently reported")
+    try:
+        return await LayaService(session).create(
+            LayaTaskCreate(
+                key=f"GAP-{gap.code}"[:64],
+                title=f"Close Brain gap: {gap.code}",
+                purpose=gap.detail,
+                owner="laya-triage",
+                systems=[gap.area],
+                acceptance_criteria=[f"Brain status no longer reports gap {gap.code}"],
+            ),
+            actor=current_user,
+        )
+    except LayaConflictError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error

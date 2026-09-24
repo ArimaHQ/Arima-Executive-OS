@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from urllib.parse import parse_qsl, urlsplit
@@ -13,6 +14,7 @@ from app.database.models import (
     KnowledgeDocument,
     KnowledgeDocumentStatus,
     KnowledgeSource,
+    KnowledgeSourceReliability,
     User,
 )
 from app.intelligence.access import (
@@ -24,6 +26,7 @@ from app.intelligence.schemas import (
     KnowledgeDocumentInput,
     KnowledgeSourceInput,
 )
+from app.services.permissions import has_founder_control_access
 
 
 class KnowledgeValidationError(ValueError):
@@ -48,6 +51,21 @@ def _as_utc(value: datetime) -> datetime:
     return value.astimezone(UTC)
 
 
+_EXCESS_BLANK_LINES = re.compile(r"\n{3,}")
+_TRAILING_SPACE = re.compile(r"[ \t]+\n")
+
+
+def normalize_content(content: str) -> str:
+    """Normalize transport noise so identical text hashes identically.
+
+    Only line endings, NUL bytes, trailing spaces and runs of blank lines are
+    changed; wording and paragraph structure are preserved.
+    """
+    value = content.replace("\r\n", "\n").replace("\r", "\n").replace("\x00", "")
+    value = _TRAILING_SPACE.sub("\n", value)
+    return _EXCESS_BLANK_LINES.sub("\n\n", value).strip()
+
+
 class KnowledgeIngestionService:
     """Normalizes workspace content into durable, provenance-bearing chunks."""
 
@@ -68,6 +86,13 @@ class KnowledgeIngestionService:
         self._validate_source(data)
         if data.freshness_required and data.max_age_seconds is None:
             raise KnowledgeValidationError("Fresh sources require a maximum age")
+        if (
+            data.reliability is KnowledgeSourceReliability.OFFICIAL
+            and not has_founder_control_access(actor)
+        ):
+            raise IntelligenceAccessError(
+                "Only Founder Control can classify a source as official"
+            )
         source = await self.session.scalar(
             select(KnowledgeSource).where(
                 KnowledgeSource.workspace_id == workspace_id,
@@ -103,13 +128,16 @@ class KnowledgeIngestionService:
         if source is None:
             raise IntelligenceAccessError("Knowledge source is unavailable")
         self._validate_document(data)
+        content = normalize_content(data.content)
+        if not content:
+            raise KnowledgeValidationError("Document content is empty after normalization")
         observed_at = _as_utc(data.source_observed_at)
         expires_at = _as_utc(data.expires_at) if data.expires_at is not None else None
         if source.freshness_required and source.max_age_seconds is not None:
             policy_expiry = observed_at + timedelta(seconds=source.max_age_seconds)
             expires_at = min(expires_at, policy_expiry) if expires_at else policy_expiry
 
-        content_hash = sha256(data.content.encode()).hexdigest()
+        content_hash = sha256(content.encode()).hexdigest()
         document = await self.session.scalar(
             select(KnowledgeDocument).where(
                 KnowledgeDocument.source_id == source.id,
@@ -117,6 +145,7 @@ class KnowledgeIngestionService:
                 KnowledgeDocument.content_hash == content_hash,
             )
         )
+        duplicate = document is not None
         if document is None:
             document = KnowledgeDocument(
                 workspace_id=workspace_id,
@@ -131,17 +160,34 @@ class KnowledgeIngestionService:
             )
             self.session.add(document)
             await self.session.flush()
-            for ordinal, content in enumerate(self._chunks(data.content)):
+            for ordinal, chunk in enumerate(self._chunks(content)):
                 self.session.add(
                     KnowledgeChunk(
                         workspace_id=workspace_id,
                         document_id=document.id,
                         ordinal=ordinal,
-                        content=content,
-                        content_hash=sha256(content.encode()).hexdigest(),
+                        content=chunk,
+                        content_hash=sha256(chunk.encode()).hexdigest(),
                     )
                 )
             await self.session.commit()
+
+        # Independent sources publishing identical content corroborate each
+        # other's provenance. Corroboration is reported, never treated as truth.
+        corroborating = tuple(
+            (
+                await self.session.scalars(
+                    select(KnowledgeDocument.source_id)
+                    .where(
+                        KnowledgeDocument.workspace_id == workspace_id,
+                        KnowledgeDocument.content_hash == content_hash,
+                        KnowledgeDocument.source_id != source.id,
+                    )
+                    .distinct()
+                    .order_by(KnowledgeDocument.source_id)
+                )
+            ).all()
+        )
 
         chunk_ids = tuple(
             (
@@ -157,6 +203,8 @@ class KnowledgeIngestionService:
             document_id=document.id,
             chunk_ids=chunk_ids,
             content_hash=content_hash,
+            duplicate=duplicate,
+            corroborating_source_ids=corroborating,
         )
 
     @staticmethod

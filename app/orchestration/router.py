@@ -34,7 +34,7 @@ class IntentEngine(HealthContract):
         OrchestrationIntent.SEARCH: ("search", "find", "look up"),
         OrchestrationIntent.PLANNING: ("plan", "roadmap"),
         OrchestrationIntent.ANALYSIS: ("analyse", "analyze", "compare"),
-        OrchestrationIntent.EXECUTION: ("execute", "run", "do"),
+        OrchestrationIntent.EXECUTION: ("execute",),
         OrchestrationIntent.TASK: ("task", "todo"),
         OrchestrationIntent.CONVERSATION: ("chat", "discuss"),
     }

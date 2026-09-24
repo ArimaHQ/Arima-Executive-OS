@@ -53,14 +53,20 @@ def test_end_to_end_general_pipeline_streaming_telemetry_and_audit() -> None:
     asyncio.run(scenario())
 
 
-def test_pipeline_delegates_tools_integrations_and_background_jobs() -> None:
+def test_pipeline_delegates_real_tools_but_never_mock_capabilities() -> None:
     async def scenario() -> None:
-        intents = (
-            ("Show project status", OrchestrationIntent.PROJECTS),
+        async with sqlite_session() as session:
+            engine = OrchestrationFactory(session).create()
+            context = await make_context(
+                session, OrchestrationRequest(content="Show project status")
+            )
+            result = await engine.execute(context)
+            assert result.intent is OrchestrationIntent.PROJECTS
+            assert result.executed_tools
+        for content, expected in (
             ("Search for trends", OrchestrationIntent.SEARCH),
             ("Run quant research", OrchestrationIntent.QUANT),
-        )
-        for content, expected in intents:
+        ):
             async with sqlite_session() as session:
                 engine = OrchestrationFactory(session).create()
                 context = await make_context(
@@ -68,10 +74,7 @@ def test_pipeline_delegates_tools_integrations_and_background_jobs() -> None:
                 )
                 result = await engine.execute(context)
                 assert result.intent is expected
-                assert (
-                    result.executed_tools
-                    or result.executed_integrations
-                    or result.executed_jobs
-                )
+                assert not result.executed_integrations
+                assert not result.executed_jobs
 
     asyncio.run(scenario())

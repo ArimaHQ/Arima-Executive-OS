@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.database.models.intelligence import KnowledgeSourceReliability
+
 
 class IntelligenceSchema(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -21,6 +23,8 @@ class KnowledgeSourceInput(IntelligenceSchema):
     source_uri: str | None = Field(default=None, max_length=2000)
     freshness_required: bool = False
     max_age_seconds: int | None = Field(default=None, ge=1, le=2_592_000)
+    reliability: KnowledgeSourceReliability = KnowledgeSourceReliability.UNVERIFIED
+    authority: str | None = Field(default=None, min_length=1, max_length=300)
 
 
 class KnowledgeDocumentInput(IntelligenceSchema):
@@ -40,6 +44,8 @@ class IngestedKnowledge(IntelligenceSchema):
     document_id: UUID
     chunk_ids: tuple[UUID, ...]
     content_hash: str
+    duplicate: bool = False
+    corroborating_source_ids: tuple[UUID, ...] = ()
 
 
 class RetrievalQuery(IntelligenceSchema):
@@ -81,3 +87,47 @@ class AuditChain(IntelligenceSchema):
     tool_execution_ids: tuple[UUID, ...]
     output_message_id: UUID | None
     resulting_action_ids: tuple[UUID, ...]
+
+
+class KnowledgeSearchResult(IntelligenceSchema):
+    rank: int = Field(ge=1)
+    score: float = Field(ge=0, le=1)
+    chunk_id: UUID
+    document_id: UUID
+    source_id: UUID
+    source_name: str
+    reliability: KnowledgeSourceReliability
+    title: str
+    content: str
+    source_observed_at: datetime
+    expires_at: datetime | None
+    provenance: dict[str, object]
+    corroborating_source_count: int = Field(ge=0)
+
+    _observed = field_validator("source_observed_at")(require_aware)
+
+
+class KnowledgeSourceHealth(IntelligenceSchema):
+    """Derived only from persisted rows; nothing here is estimated."""
+
+    document_count: int = Field(ge=0)
+    latest_observed_at: datetime | None
+    freshness_state: str
+    retrieval_count: int = Field(ge=0)
+    last_retrieved_at: datetime | None
+
+
+class KnowledgeSourceRead(IntelligenceSchema):
+    id: UUID
+    workspace_id: UUID
+    source_type: str
+    external_id: str
+    name: str
+    source_uri: str | None
+    reliability: KnowledgeSourceReliability
+    authority: str | None
+    freshness_required: bool
+    max_age_seconds: int | None
+    is_enabled: bool
+    created_at: datetime
+    health: KnowledgeSourceHealth

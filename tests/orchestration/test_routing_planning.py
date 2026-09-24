@@ -119,7 +119,8 @@ def test_planning_and_optimisation_policies() -> None:
     project = planner.plan(OrchestrationIntent.PROJECTS, "projects")
     assert project.steps[0].target is PlanTarget.TOOL
     search = planner.plan(OrchestrationIntent.SEARCH, "search this")
-    assert search.steps[0].target is PlanTarget.INTEGRATION
+    # The only search connector is a deterministic mock, so nothing is planned.
+    assert [step.target for step in search.steps] == [PlanTarget.RESPONSE]
     assert len(project.policies) == len(ExecutionPolicy)
     assert (
         planner.plan(
@@ -136,4 +137,26 @@ def test_planning_and_optimisation_policies() -> None:
             OrchestrationIntent.ANALYSIS,
         )
         is ModelProfile.REASONING
+    )
+
+
+def test_ordinary_phrasing_never_plans_mock_or_execution_steps() -> None:
+    engine = IntentEngine()
+    planner = OrchestrationPlanner()
+    for content in (
+        "How do I build a budget?",
+        "What do you think about my savings?",
+        "Run the numbers on my runway",
+        "Can you run a backtest on gold?",
+        "Execute my rebalance",
+        "Search for market news",
+    ):
+        intent = engine.detect(OrchestrationRequest(content=content))
+        plan = planner.plan(intent, content)
+        assert not any(
+            step.target in (PlanTarget.AGENT, PlanTarget.BACKGROUND, PlanTarget.INTEGRATION)
+            for step in plan.steps
+        ), (content, intent, plan.steps)
+    assert engine.detect(OrchestrationRequest(content="How do I build a budget?")) is (
+        OrchestrationIntent.GENERAL
     )

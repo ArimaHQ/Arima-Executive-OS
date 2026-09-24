@@ -34,6 +34,16 @@ class KnowledgeDocumentStatus(str, Enum):
     FAILED = "failed"
 
 
+class KnowledgeSourceReliability(str, Enum):
+    """Declared publisher class. It orders retrieval; it never proves a claim."""
+
+    OFFICIAL = "official"
+    PRIMARY = "primary"
+    ESTABLISHED = "established"
+    USER_PROVIDED = "user_provided"
+    UNVERIFIED = "unverified"
+
+
 class TelegramIdentityStatus(str, Enum):
     VERIFIED = "verified"
     REVOKED = "revoked"
@@ -149,6 +159,13 @@ class KnowledgeSource(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     max_age_seconds: Mapped[int | None] = mapped_column(Integer)
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    reliability: Mapped[KnowledgeSourceReliability] = mapped_column(
+        intelligence_enum(KnowledgeSourceReliability, "knowledge_source_reliability"),
+        default=KnowledgeSourceReliability.UNVERIFIED,
+        server_default=KnowledgeSourceReliability.UNVERIFIED.value,
+        nullable=False,
+    )
+    authority: Mapped[str | None] = mapped_column(String(300))
 
     __table_args__ = (
         UniqueConstraint(

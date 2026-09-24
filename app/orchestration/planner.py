@@ -44,26 +44,10 @@ class OrchestrationPlanner(HealthContract):
             steps.append(
                 PlanStep(target=PlanTarget.TOOL, name="task.search")
             )
-        elif intent is OrchestrationIntent.SEARCH:
-            steps.append(
-                PlanStep(
-                    target=PlanTarget.INTEGRATION,
-                    name="search",
-                    operation="web_search",
-                    payload={"query": content},
-                )
-            )
-        elif intent is OrchestrationIntent.QUANT:
-            steps.append(
-                PlanStep(
-                    target=PlanTarget.BACKGROUND,
-                    name="quant_research_summary",
-                )
-            )
-        elif intent is OrchestrationIntent.EXECUTION:
-            steps.append(
-                PlanStep(target=PlanTarget.AGENT, name="mock")
-            )
+        # SEARCH, QUANT and EXECUTION intentionally plan no action step: the
+        # web-search connector and the quant research job are deterministic
+        # mocks, and execution is never autonomous (ExecutionPolicy). Routing a
+        # user request to them would record fabricated work as successful.
         steps.append(PlanStep(target=PlanTarget.RESPONSE, name="assemble"))
         return ExecutionPlan(
             intent=intent,

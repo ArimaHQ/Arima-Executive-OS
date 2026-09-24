@@ -24,6 +24,7 @@ import re
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -82,12 +83,25 @@ class Actor:
     def post(self, path: str, **kwargs) -> httpx.Response:
         return self.client.post(path, headers=self.headers(), **kwargs)
 
-    def login(self, otp: str | None = None) -> httpx.Response:
+    rate_limited_logins = 0
+
+    def login(self, otp: Callable[[], str] | None = None) -> httpx.Response:
+        def body() -> dict[str, object]:
+            payload: dict[str, object] = {"email": self.email, "password": PASSWORD}
+            if otp is not None:
+                payload["otp"] = otp()
+            return payload
+
         self.refresh_csrf()
-        body: dict[str, object] = {"email": self.email, "password": PASSWORD}
-        if otp is not None:
-            body["otp"] = otp
-        response = self.post("/api/v1/auth/login", json=body)
+        response = self.post("/api/v1/auth/login", json=body())
+        if response.status_code == 429:
+            # The per-client login limiter is working; wait out its window.
+            Actor.rate_limited_logins += 1
+            time.sleep(61)
+            if otp is not None:
+                time.sleep(31 - (time.time() % 30))
+            self.refresh_csrf()
+            response = self.post("/api/v1/auth/login", json=body())
         if response.status_code == 200:
             payload = response.json()
             self.access_token = payload.get("access_token") or payload.get(
@@ -233,7 +247,7 @@ def phase2(args: argparse.Namespace, evidence: Evidence, state: dict[str, str]) 
         confirmed = founder.post("/api/v1/auth/mfa/verify", json={"code": code_for(secret, current_step())})
         evidence.record("founder MFA confirmation", confirmed.status_code == 204, confirmed.status_code)
         time.sleep(31 - (time.time() % 30))
-        mfa_login = founder.login(otp=code_for(secret, current_step()))
+        mfa_login = founder.login(otp=lambda: code_for(secret, current_step()))
         evidence.record("founder login with TOTP", mfa_login.status_code == 200, mfa_login.status_code)
         health = founder.get("/api/v1/admin/founder/system-health")
         evidence.record("founder system-health", health.status_code == 200, [c.get("key") for c in health.json().get("components", [])] if health.status_code == 200 else health.status_code)
@@ -241,6 +255,51 @@ def phase2(args: argparse.Namespace, evidence: Evidence, state: dict[str, str]) 
         evidence.record("founder data-feeds", feeds.status_code == 200, feeds.status_code)
 
     evidence.record("client denied founder control", a.get("/api/v1/admin/founder/system-health").status_code in (401, 403))
+
+    # Jarvis (founder) -> Brain status -> Laya task graph.
+    brain = founder.get("/api/v1/admin/founder/brain/status")
+    brain_body = brain.json() if brain.status_code == 200 else {}
+    evidence.record(
+        "Jarvis brain status (founder)",
+        brain.status_code == 200 and brain_body["execution_policy"]["live_execution"] is False,
+        {key: brain_body.get(key) for key in ("agents", "news_provider")} if brain_body else brain.status_code,
+    )
+    evidence.record("client denied Jarvis brain status", a.get("/api/v1/admin/founder/brain/status").status_code == 403)
+    policy = founder.get("/api/v1/admin/founder/execution-policy").json()
+    evidence.record(
+        "execution policy locked",
+        policy == {"execution_authority": "NONE", "live_execution": False, "autonomous_execution": False,
+                   "paper_execution": True, "external_execution": "DISCONNECTED"},
+        policy,
+    )
+    founder.refresh_csrf()
+    gap_task = founder.post("/api/v1/admin/founder/brain/gaps/no_official_sources/task")
+    evidence.record("Jarvis hands a gap to Laya", gap_task.status_code == 201, gap_task.json().get("key") if gap_task.status_code == 201 else gap_task.status_code)
+    laya = "/api/v1/admin/founder/laya"
+    for key, deps in (("E2E-PARENT", []), ("E2E-CHILD", ["E2E-PARENT"])):
+        founder.refresh_csrf()
+        founder.post(f"{laya}/tasks", json={
+            "key": key, "title": key, "purpose": "live orchestration check", "owner": "claude-code",
+            "depends_on": deps, "acceptance_criteria": ["dependency gate enforced"],
+        })
+
+    def move(key: str, *targets: str) -> httpx.Response:
+        response = None
+        for target in targets:
+            founder.refresh_csrf()
+            response = founder.post(f"{laya}/tasks/{key}/transition", json={"status": target})
+        return response
+
+    early_start = move("E2E-CHILD", "ready", "running")
+    evidence.record("Laya blocks dependent before dependency passes", early_start.status_code == 409, early_start.text[:120])
+    move("E2E-PARENT", "ready", "running", "verifying")
+    for kind in ("test", "e2e"):
+        founder.refresh_csrf()
+        founder.post(f"{laya}/tasks/E2E-PARENT/evidence", json={"kind": kind, "reference": f"reports/evidence/e2e_phase2.json#{kind}"})
+    completed = move("E2E-PARENT", "passed", "completed")
+    evidence.record("Laya completes task only with test + e2e evidence", completed.status_code == 200 and completed.json()["status"] == "completed", completed.status_code)
+    child = move("E2E-CHILD", "running")
+    evidence.record("Laya unblocks dependent after dependency completes", child.status_code == 200 and child.json()["status"] == "running", child.status_code)
 
     # Tenant isolation over real HTTP.
     a.refresh_csrf()
@@ -283,12 +342,58 @@ def phase2(args: argparse.Namespace, evidence: Evidence, state: dict[str, str]) 
         other = b.get(f"/api/v1/voice/sessions/{session_id}")
         evidence.record("client B cannot read client A voice session", other.status_code in (403, 404), other.status_code)
 
+    # Layer 1 -> validated memory -> Brain evidence.
+    workspace_a = a.get("/api/v1/auth/me").json()["workspace"]["id"]
+    a.refresh_csrf()
+    source = a.post(
+        f"/api/v1/knowledge/workspaces/{workspace_a}/sources",
+        json={"source_type": "report", "external_id": f"gold-{args.run_id}", "name": "Gold research note"},
+    )
+    evidence.record("client registers knowledge source", source.status_code == 201, source.status_code)
+    if source.status_code == 201:
+        a.refresh_csrf()
+        document = a.post(
+            f"/api/v1/knowledge/workspaces/{workspace_a}/sources/{source.json()['id']}/documents",
+            json={
+                "external_id": "note-1",
+                "title": "Gold versus real yields",
+                "content": "Gold rose while real yields increased; safe-haven demand and central bank buying explain the divergence.",
+                "source_observed_at": datetime.now(UTC).isoformat(),
+                "provenance": {"source": "local-e2e", "author": "verification"},
+            },
+        )
+        evidence.record("document ingested with provenance", document.status_code == 201, document.text[:160])
+        a.refresh_csrf()
+        no_provenance = a.post(
+            f"/api/v1/knowledge/workspaces/{workspace_a}/sources/{source.json()['id']}/documents",
+            json={
+                "external_id": "note-2", "title": "x", "content": "unattributed claim",
+                "source_observed_at": datetime.now(UTC).isoformat(), "provenance": {},
+            },
+        )
+        evidence.record("document without provenance rejected", no_provenance.status_code == 422, no_provenance.status_code)
+        found = a.get(f"/api/v1/knowledge/workspaces/{workspace_a}/search", params={"q": "gold real yields"})
+        evidence.record("memory search returns provenance", found.status_code == 200 and '"local-e2e"' in found.text, found.status_code)
+        foreign = b.get(f"/api/v1/knowledge/workspaces/{workspace_a}/search", params={"q": "gold"})
+        evidence.record("client B cannot search client A memory", foreign.status_code == 403 and "safe-haven" not in foreign.text, foreign.status_code)
+        a.refresh_csrf()
+        brain_session = a.post("/api/v1/voice/sessions", json={})
+        if brain_session.status_code in (200, 201):
+            a.refresh_csrf()
+            brain = a.post(
+                f"/api/v1/voice/sessions/{brain_session.json()['session_id']}/transcript",
+                json={"transcript": "Why did gold rise while real yields increased?"},
+            )
+            evidence.record(
+                "ingested research reaches Brain prompt with observation date",
+                brain.status_code == 200 and "[observed " in brain.text and "safe-haven" in brain.text,
+                brain.status_code,
+            )
+        health = a.get(f"/api/v1/knowledge/workspaces/{workspace_a}/sources").json()[0]["health"]
+        evidence.record("source health counts Brain retrievals", health["retrieval_count"] >= 1, health)
+
     early = Actor(base, state["early_client_email"])
     early_login = early.login()
-    if early_login.status_code == 429:
-        evidence.record("login rate limit enforced per client", True, "429 after repeated logins")
-        time.sleep(61)
-        early_login = early.login()
     evidence.record("early client login", early_login.status_code == 200, early_login.status_code)
     early.refresh_csrf()
     early_session = early.post("/api/v1/voice/sessions", json={})
@@ -351,6 +456,12 @@ def main() -> int:
         state_path.write_text(json.dumps(phase1(args, evidence), indent=2))
     else:
         phase2(args, evidence, json.loads(state_path.read_text()))
+    if Actor.rate_limited_logins:
+        evidence.record(
+            "login rate limiter enforced (429) and recovered after its window",
+            True,
+            f"{Actor.rate_limited_logins} limited login(s)",
+        )
     Path(args.evidence_file).write_text(
         json.dumps({**asdict(evidence), "checks": [asdict(c) for c in evidence.checks]}, indent=2)
     )

@@ -58,6 +58,9 @@ class AuditEntity(str, Enum):
     WITHDRAWAL_CIRCUIT_BREAKER = "withdrawal_circuit_breaker"
     DOCUMENT = "document"
     TRADE = "trade"
+    KNOWLEDGE_SOURCE = "knowledge_source"
+    KNOWLEDGE_DOCUMENT = "knowledge_document"
+    LAYA_TASK = "laya_task"
 
 
 class AuditLog(UUIDPrimaryKeyMixin, Base):

@@ -1,0 +1,63 @@
+{
+  "generated_at": "2026-09-24T16:53:58.171154+00:00",
+  "base_url": "http://127.0.0.1:8765",
+  "users_requested": 20,
+  "users_authenticated": 20,
+  "onboarding_seconds": 4.37,
+  "load_seconds": 6.41,
+  "requests": 480,
+  "throughput_rps": 74.9,
+  "errors": {},
+  "isolation_violations": [],
+  "latency": {
+    "auth.me": {
+      "count": 100,
+      "p50_ms": 118.0,
+      "p95_ms": 271.5,
+      "max_ms": 394.6
+    },
+    "dashboard.summary": {
+      "count": 100,
+      "p50_ms": 134.7,
+      "p95_ms": 357.3,
+      "max_ms": 474.8
+    },
+    "knowledge.ingest": {
+      "count": 20,
+      "p50_ms": 428.4,
+      "p95_ms": 458.4,
+      "max_ms": 470.4
+    },
+    "knowledge.register_source": {
+      "count": 20,
+      "p50_ms": 527.6,
+      "p95_ms": 581.4,
+      "max_ms": 582.7
+    },
+    "knowledge.search": {
+      "count": 100,
+      "p50_ms": 164.4,
+      "p95_ms": 224.5,
+      "max_ms": 323.2
+    },
+    "market.availability": {
+      "count": 100,
+      "p50_ms": 140.0,
+      "p95_ms": 186.5,
+      "max_ms": 304.9
+    },
+    "voice.brain_turn": {
+      "count": 20,
+      "p50_ms": 1440.2,
+      "p95_ms": 1484.2,
+      "max_ms": 1504.5
+    },
+    "voice.session": {
+      "count": 20,
+      "p50_ms": 496.1,
+      "p95_ms": 556.0,
+      "max_ms": 556.8
+    }
+  },
+  "environment": "local uvicorn (1 worker) + PostgreSQL 16 on the same host; mock LLM provider"
+}

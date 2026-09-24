@@ -10,7 +10,7 @@ from app.experience.schemas import (
     ExperienceEventType,
 )
 from app.orchestration.factory import OrchestrationFactory
-from app.orchestration.schemas import OrchestrationRequest
+from app.orchestration.schemas import ExecutedAction, OrchestrationRequest, PlanTarget
 from app.voice.events import VoiceEventType
 from app.voice.schemas import VoiceEvent, VoiceSession
 from tests.database.helpers import sqlite_session
@@ -118,38 +118,60 @@ def test_voice_events_map_to_avatar_chamber_approval_and_demo_objects() -> None:
 def test_orchestration_results_map_project_and_background_outcomes() -> None:
     async def scenario() -> None:
         mapper = ExperienceEventMapper()
-        cases = (
-            (
-                "Show project status",
-                ExperienceEventType.TASK_VISUALISATION_REQUESTED,
-            ),
-            (
-                "Run quant research",
-                ExperienceEventType.BACKGROUND_JOB_COMPLETED,
-            ),
+        async with sqlite_session() as session:
+            context = await make_context(
+                session,
+                OrchestrationRequest(content="Show project status"),
+            )
+            result = await OrchestrationFactory(session).create().execute(
+                context
+            )
+        voice_session = make_session().model_copy(
+            update={"correlation_id": result.correlation_id}
         )
-        for content, expected_type in cases:
-            async with sqlite_session() as session:
-                context = await make_context(
-                    session,
-                    OrchestrationRequest(content=content),
-                )
-                result = await OrchestrationFactory(session).create().execute(
-                    context
-                )
-                voice_session = make_session().model_copy(
-                    update={"correlation_id": result.correlation_id}
-                )
-                events = mapper.from_orchestration_result(
-                    voice_session,
-                    result,
-                )
-                assert any(
-                    event.type is expected_type for event in events
-                )
-                assert all(
-                    event.correlation_id == result.correlation_id
-                    for event in events
-                )
+        events = mapper.from_orchestration_result(voice_session, result)
+        assert any(
+            event.type is ExperienceEventType.TASK_VISUALISATION_REQUESTED
+            for event in events
+        )
+        assert all(
+            event.correlation_id == result.correlation_id for event in events
+        )
+
+        with_job = result.model_copy(
+            update={
+                "executed_jobs": [
+                    ExecutedAction(
+                        step_id=uuid4(),
+                        target=PlanTarget.BACKGROUND,
+                        name="platform_health_review",
+                        success=True,
+                        output={},
+                    )
+                ]
+            }
+        )
+        job_events = mapper.from_orchestration_result(voice_session, with_job)
+        assert any(
+            event.type is ExperienceEventType.BACKGROUND_JOB_COMPLETED
+            for event in job_events
+        )
+
+        # A quant request is no longer routed to the mock research job, so
+        # the interface must not show a completed background job for it.
+        async with sqlite_session() as session:
+            context = await make_context(
+                session,
+                OrchestrationRequest(content="Run quant research"),
+            )
+            quant = await OrchestrationFactory(session).create().execute(context)
+        quant_events = mapper.from_orchestration_result(
+            make_session().model_copy(update={"correlation_id": quant.correlation_id}),
+            quant,
+        )
+        assert not any(
+            event.type is ExperienceEventType.BACKGROUND_JOB_COMPLETED
+            for event in quant_events
+        )
 
     asyncio.run(scenario())

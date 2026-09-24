@@ -135,7 +135,9 @@ class VoiceOrchestrationContextFactory:
                 workspace_id=workspace_id,
                 run_id=run.id,
                 actor=actor,
-                query=RetrievalQuery(text=transcript),
+                # Stale and expired evidence is always excluded; research that
+                # is not time-sensitive is admitted with its observation date.
+                query=RetrievalQuery(text=transcript, require_fresh=False),
             )
         except Exception as error:
             await runs.fail(
@@ -174,7 +176,10 @@ class VoiceOrchestrationContextFactory:
                             "evidence_id": str(item.evidence_id),
                             "source_id": str(item.source_id),
                             "document_id": str(item.document_id),
-                            "content": item.content,
+                            "content": (
+                                f"[observed {item.source_observed_at.isoformat()}] "
+                                f"{item.content}"
+                            ),
                         }
                         for item in evidence
                     ],

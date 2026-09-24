@@ -1,5 +1,5 @@
 {
-  "started_at": "2026-09-24T16:24:00.835496+00:00",
+  "started_at": "2026-09-24T16:51:57.388337+00:00",
   "base_url": "http://127.0.0.1:8765",
   "phase": "phase2",
   "checks": [
@@ -24,22 +24,22 @@
       "detail": "ok"
     },
     {
-      "name": "register client.a.162400@arima-audit.com",
+      "name": "register client.a.165157@arima-audit.com",
       "passed": true,
       "detail": "201"
     },
     {
-      "name": "unverified login rejected client.a.162400@arima-audit.com",
+      "name": "unverified login rejected client.a.165157@arima-audit.com",
       "passed": true,
       "detail": "403"
     },
     {
-      "name": "verification email delivered client.a.162400@arima-audit.com",
+      "name": "verification email delivered client.a.165157@arima-audit.com",
       "passed": true,
       "detail": "True"
     },
     {
-      "name": "verify email client.a.162400@arima-audit.com",
+      "name": "verify email client.a.165157@arima-audit.com",
       "passed": true,
       "detail": "200"
     },
@@ -49,22 +49,22 @@
       "detail": ""
     },
     {
-      "name": "register client.b.162400@arima-audit.com",
+      "name": "register client.b.165157@arima-audit.com",
       "passed": true,
       "detail": "201"
     },
     {
-      "name": "unverified login rejected client.b.162400@arima-audit.com",
+      "name": "unverified login rejected client.b.165157@arima-audit.com",
       "passed": true,
       "detail": "403"
     },
     {
-      "name": "verification email delivered client.b.162400@arima-audit.com",
+      "name": "verification email delivered client.b.165157@arima-audit.com",
       "passed": true,
       "detail": "True"
     },
     {
-      "name": "verify email client.b.162400@arima-audit.com",
+      "name": "verify email client.b.165157@arima-audit.com",
       "passed": true,
       "detail": "200"
     },
@@ -112,6 +112,41 @@
       "name": "client denied founder control",
       "passed": true,
       "detail": ""
+    },
+    {
+      "name": "Jarvis brain status (founder)",
+      "passed": true,
+      "detail": "{'agents': {'default_agent': 'executive-assistant', 'default_agent_active': True, 'active_agents': 1, 'workspaces': 5, 'workspaces_with_default_grant': 5}, 'news_provider': 'not_configured'}"
+    },
+    {
+      "name": "client denied Jarvis brain status",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "execution policy locked",
+      "passed": true,
+      "detail": "{'execution_authority': 'NONE', 'live_execution': False, 'autonomous_execution': False, 'paper_execution': True, 'external_execution': 'DISCONNECTED'}"
+    },
+    {
+      "name": "Jarvis hands a gap to Laya",
+      "passed": true,
+      "detail": "GAP-no_official_sources"
+    },
+    {
+      "name": "Laya blocks dependent before dependency passes",
+      "passed": true,
+      "detail": "{\"detail\":\"E2E-CHILD depends on unfinished tasks: E2E-PARENT\"}"
+    },
+    {
+      "name": "Laya completes task only with test + e2e evidence",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "Laya unblocks dependent after dependency completes",
+      "passed": true,
+      "detail": "200"
     },
     {
       "name": "client A creates project",
@@ -179,6 +214,41 @@
       "detail": "403"
     },
     {
+      "name": "client registers knowledge source",
+      "passed": true,
+      "detail": "201"
+    },
+    {
+      "name": "document ingested with provenance",
+      "passed": true,
+      "detail": "{\"source_id\":\"472d84f8-806c-4279-b470-7ed4f70b343d\",\"document_id\":\"0e2c9fc8-0be3-414e-8b04-8bb64ebf60cc\",\"chunk_ids\":[\"90f91f26-4fbf-4de3-8876-f0c4b863831e\"],\"c"
+    },
+    {
+      "name": "document without provenance rejected",
+      "passed": true,
+      "detail": "422"
+    },
+    {
+      "name": "memory search returns provenance",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "client B cannot search client A memory",
+      "passed": true,
+      "detail": "403"
+    },
+    {
+      "name": "ingested research reaches Brain prompt with observation date",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "name": "source health counts Brain retrievals",
+      "passed": true,
+      "detail": "{'document_count': 1, 'latest_observed_at': '2026-09-24T16:52:31.909807Z', 'freshness_state': 'not_time_sensitive', 'retrieval_count': 1, 'last_retrieved_at': '2026-09-24T16:52:32.037160Z'}"
+    },
+    {
       "name": "early client login",
       "passed": true,
       "detail": "200"
@@ -186,12 +256,12 @@
     {
       "name": "client registered before agent bootstrap gets a voice session",
       "passed": true,
-      "detail": "201 {\"session_id\":\"252800f0-fd1e-4f13-9fdc-d6e61ad996e8\",\"user_id\":\"488dae15-2dba-4600-aa2f-56f08b2cfc1c\",\"conversation_id\":\"e1479b64-b06e-43e6-bfae-84f5da939a22\",\"run_id\":null,\"correlation_id\":\"405114a7-"
+      "detail": "201 {\"session_id\":\"9a540542-1202-43b0-b349-a29489d332de\",\"user_id\":\"dce673a2-4697-4758-9774-184686b44c9d\",\"conversation_id\":\"97ae8ced-fb11-475c-bafd-4356524abf58\",\"run_id\":null,\"correlation_id\":\"7da04d43-"
     },
     {
       "name": "client registered before agent bootstrap can use the Brain",
       "passed": true,
-      "detail": "200 {\"session_id\":\"252800f0-fd1e-4f13-9fdc-d6e61ad996e8\",\"correlation_id\":\"aff8f5ec-9df7-4e66-8633-5e1864bd7573\",\"state\":\"completed\",\"transcript\":\"What should I focus on today?\",\"response_text\":\"Mock resp"
+      "detail": "200 {\"session_id\":\"9a540542-1202-43b0-b349-a29489d332de\",\"correlation_id\":\"9621cf0e-97d7-43f3-9598-672cb72795b2\",\"state\":\"completed\",\"transcript\":\"What should I focus on today?\",\"response_text\":\"Mock resp"
     },
     {
       "name": "refresh rotates session",

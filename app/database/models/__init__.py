@@ -115,6 +115,12 @@ from app.database.models.workspace import Tenant, Workspace, WorkspaceMembership
 from app.database.models.voice import VoiceSessionRecord
 from app.database.models.market import MarketPrice
 from app.database.models.market_verification import MarketProviderVerification
+from app.database.models.laya import (
+    LayaFailureClass,
+    LayaTask,
+    LayaTaskDependency,
+    LayaTaskStatus,
+)
 from app.database.models.intelligence import (
     AIRetrievedContext,
     AIWorkspaceRun,
@@ -122,6 +128,7 @@ from app.database.models.intelligence import (
     KnowledgeDocument,
     KnowledgeDocumentStatus,
     KnowledgeSource,
+    KnowledgeSourceReliability,
     TelegramIdentity,
     TelegramIdentityStatus,
     TelegramMessage,
@@ -246,6 +253,11 @@ __all__ = [
     "KnowledgeDocument",
     "KnowledgeDocumentStatus",
     "KnowledgeSource",
+    "KnowledgeSourceReliability",
+    "LayaFailureClass",
+    "LayaTask",
+    "LayaTaskDependency",
+    "LayaTaskStatus",
     "TelegramIdentity",
     "TelegramIdentityStatus",
     "TelegramMessage",
