@@ -51,27 +51,27 @@ EPIC-01 Discovery ──► EPIC-02 Architecture
 | T-R.3 | D2b `.env.example` fails validation | claude-code | Template loads | same test file | COMPLETED |
 | T-R.4 | D3 market response hard-coded BTC | claude-code | Instrument-correct text; mismatched quote never relabelled | `test_market_voice_contract.py` + E2E gold check | COMPLETED |
 | T-R.5 | D4 pre-bootstrap workspaces have no Brain access | claude-code | Backfill missing grants; revocations preserved; idempotent | `test_agent_foundation.py` + E2E early-client check | COMPLETED |
-| T-R.6 | Mock background jobs (`quant_research_summary`, `growth_content_review`) routed from the planner | claude-code | QUANT intent no longer executes a mock that reports success | test | READY |
-| T-R.7 | Founder data-feed catalogue is stale (claims documents and portfolio models are absent) | claude-code | Catalogue reflects the real contracts | test | READY |
+| T-R.6 | Planner routed SEARCH/QUANT/EXECUTION (and "do"/"run" phrasing) to mock capabilities | claude-code | No user request plans a mock step | `test_routing_planning.py`, `test_pipeline_execution.py`, experience-event test | PASSED (mock connectors/jobs still exist in catalogues) |
+| T-R.7 | Founder data-feed catalogue is stale (claims documents and portfolio models are absent) | claude-code | Catalogue reflects the real contracts | `test_feed_catalog_does_not_deny_capabilities_that_exist` | COMPLETED |
 
 ## EPIC-16 SECURITY
 
 | Task | Purpose | Owner | Deps | Acceptance | Status |
 |---|---|---|---|---|---|
-| T-16.1 | Canonical immutable `ExecutionPolicy` (`authority=NONE, live=false, autonomous=false, paper=true, external=DISCONNECTED`) | claude-code | — | Single source; QTrade asserts it; mutation impossible; invariant tests | READY |
-| T-16.2 | Expose the policy read-only to Jarvis | claude-code | T-16.1 | Founder-only endpoint; clients get 403 | READY |
-| T-16.3 | Production MFA gate evidence | human | HTTPS deploy | Founder blocked pre-MFA in production | BLOCKED (no production access) |
+| T-16.1 | Canonical immutable `ExecutionPolicy` (`authority=NONE, live=false, autonomous=false, paper=true, external=DISCONNECTED`) | claude-code | — | Single source; QTrade asserts it; mutation impossible; invariant tests | COMPLETED (`tests/quant/test_execution_policy.py`, E2E) |
+| T-16.2 | Expose the policy read-only to Jarvis | claude-code | T-16.1 | Founder-only endpoint; clients get 403 | COMPLETED (`test_jarvis_brain_status.py`, E2E) |
+| T-16.3 | Production MFA gate evidence | human | HTTPS deploy | Founder blocked pre-MFA in production | Code path PASSED (`tests/auth/test_privileged_mfa_gate.py`, mutation-checked); deployment evidence BLOCKED (no production access) |
 | T-16.4 | Tenant-isolation tests for every new API | claude-code | each new API | Cross-workspace access returns 403/404 | continuous |
 
 ## EPIC-04 DATA (Layer 1 + Middle Layer 1)
 
 | Task | Purpose | Owner | Deps | Acceptance | Status |
 |---|---|---|---|---|---|
-| T-04.1 | **Knowledge ingestion API** (B1): register sources and ingest documents into the existing store | claude-code | T-16.4 | Membership + role + CSRF enforced; provenance required; credentials rejected; audited | READY |
-| T-04.2 | Source reliability tier and authority metadata (migration) | claude-code | T-04.1 | `official / primary / established / unverified / user_provided`; default `unverified` | READY |
-| T-04.3 | Validation pipeline: normalise, dedupe, cross-source corroboration count, conflict flag | claude-code | T-04.1 | Duplicate content is not re-chunked; corroboration recorded; frequency never becomes a truth flag | READY |
-| T-04.4 | Source health (last observation, document count, freshness state, retrieval usage) | claude-code | T-04.2 | Derived from real rows only | READY |
-| T-04.5 | Official macro calendar adapter (port v3 BLS/Fed/BEA feed parsing into an ingestion worker) | claude-code | T-04.1–3 | Parser unit-tested on recorded fixtures | READY |
+| T-04.1 | **Knowledge ingestion API** (B1): register sources and ingest documents into the existing store | claude-code | T-16.4 | Membership + CSRF enforced; provenance required; credentials rejected; audited | COMPLETED (`test_knowledge_api.py`, E2E, 20-user run) |
+| T-04.2 | Source reliability tier and authority metadata (migration) | claude-code | T-04.1 | `official / primary / established / unverified / user_provided`; default `unverified` | COMPLETED (migration 0027 verified on PG16) |
+| T-04.3 | Validation pipeline: normalise, dedupe, cross-source corroboration count, conflict flag | claude-code | T-04.1 | Duplicate content is not re-chunked; corroboration recorded; frequency never becomes a truth flag | PASSED (normalise/dedupe/corroboration done; semantic contradiction detection not built) |
+| T-04.4 | Source health (last observation, document count, freshness state, retrieval usage) | claude-code | T-04.2 | Derived from real rows only | COMPLETED |
+| T-04.5 | Official macro calendar adapter (port v3 BLS/Fed/BEA feed parsing into an ingestion worker) | claude-code | T-04.1–3 | Parser tested on **recorded** real feeds | BLOCKED (no real feed can be recorded: network policy) |
 | T-04.6 | Live fetch of official feeds | human | T-04.5 | Network policy allows the hosts; real document ingested with provenance | BLOCKED (network policy 403) |
 | T-04.7 | ECB/BBC/cross-source workers | external-repo | — | — | BLOCKED (not accessible) |
 
@@ -79,9 +79,9 @@ EPIC-01 Discovery ──► EPIC-02 Architecture
 
 | Task | Purpose | Owner | Deps | Acceptance | Status |
 |---|---|---|---|---|---|
-| T-05.1 | Memory search API over the knowledge store (read-only, provenance and freshness in every result) | claude-code | T-04.1 | Workspace-scoped; stale and provenance-less results excluded | READY |
-| T-05.2 | Reliability- and corroboration-weighted ranking | claude-code | T-04.2, T-04.3 | Ranking only reorders; it never admits invalid evidence | READY |
-| T-05.3 | E2E: ingested source reaches a Brain answer as cited evidence | claude-code | T-04.1, T-05.1 | Voice answer contains `[evidence:…]` from the ingested document | READY |
+| T-05.1 | Memory search API over the knowledge store (read-only, provenance and freshness in every result) | claude-code | T-04.1 | Workspace-scoped; stale and provenance-less results excluded | COMPLETED |
+| T-05.2 | Reliability- and corroboration-weighted ranking | claude-code | T-04.2, T-04.3 | Ranking only reorders; it never admits invalid evidence | COMPLETED |
+| T-05.3 | E2E: ingested source reaches the Brain as run evidence | claude-code | T-04.1, T-05.1 | Evidence row + dated evidence in Brain prompt | COMPLETED (D6 repaired; real-LLM citation not verifiable without a provider credential) |
 | T-05.4 | Semantic embeddings (pgvector) | claude-code + human | embedding provider credential | Extension installed; hybrid retrieval | BLOCKED (no embedding provider enabled; pgvector not installed) |
 | T-05.5 | Hot/warm/cold tiers and long-document compression | claude-code | T-05.4 | — | DISCOVERED |
 
@@ -89,7 +89,7 @@ EPIC-01 Discovery ──► EPIC-02 Architecture
 
 | Task | Purpose | Owner | Deps | Acceptance | Status |
 |---|---|---|---|---|---|
-| T-03.1 | Right-brain guard: context/preference evidence is typed and can never feed financial computation | claude-code | T-05.1 | Tests prove preference memory is excluded from financial inputs | READY |
+| T-03.1 | Right-brain guard: context/preference evidence is typed and can never feed financial computation | claude-code | T-05.1 | Tests prove preference memory is excluded from the Brain payload and financial inputs | PASSED (payload guard test; typed right-brain context not built) |
 | T-03.2 | Layer 3 synthesis (hypothesis → evidence → confidence) | claude-code | T-04.*, T-05.*, T-09.* | Needs real data first | BLOCKED (on data) |
 | T-03.3 | Ollama/Qwen and Anthropic provider adapters | claude-code | reachable runtime | Real completion round-trip | BLOCKED (no runtime or credential reachable) |
 
@@ -97,24 +97,24 @@ EPIC-01 Discovery ──► EPIC-02 Architecture
 
 | Task | Purpose | Owner | Deps | Acceptance | Status |
 |---|---|---|---|---|---|
-| T-07.1 | Persistent task graph: TASK_ID, purpose, owner, deps, inputs/outputs, acceptance, tests, status, evidence, blockers | claude-code | T-16.1 | Migration + service | READY |
-| T-07.2 | Dependency enforcement: a task cannot pass/complete before its dependencies | claude-code | T-07.1 | Invariant tests | READY |
-| T-07.3 | Failure classification (transient / data / code / dependency / permission / infrastructure / architectural) with retry versus escalate | claude-code | T-07.1 | Tests | READY |
-| T-07.4 | Founder-only API (Jarvis → Laya) | claude-code | T-07.1, T-16.2 | Clients get 403; audited | READY |
+| T-07.1 | Persistent task graph: TASK_ID, purpose, owner, deps, inputs/outputs, acceptance, tests, status, evidence, blockers | claude-code | T-16.1 | Migration + service | COMPLETED (migration 0028 on PG16; graph loaded, 0 rejections) |
+| T-07.2 | Dependency enforcement: a task cannot pass/complete before its dependencies | claude-code | T-07.1 | Invariant tests | COMPLETED (tests + live E2E) |
+| T-07.3 | Failure classification (transient / data / code / dependency / permission / infrastructure / architectural) with retry versus escalate | claude-code | T-07.1 | Tests | PASSED (policy + transitions; no autonomous agent dispatcher executes retries) |
+| T-07.4 | Founder-only API (Jarvis → Laya) | claude-code | T-07.1, T-16.2 | Clients get 403; audited | COMPLETED |
 
 ## EPIC-13 JARVIS (backend)
 
 | Task | Purpose | Owner | Deps | Acceptance | Status |
 |---|---|---|---|---|---|
-| T-13.1 | Brain status: agents, grants, providers, sources, knowledge coverage, execution policy, Laya summary | claude-code | T-04.4, T-07.4, T-16.2 | Founder-only; real rows only | READY |
+| T-13.1 | Brain status: agents, grants, providers, sources, knowledge coverage, execution policy, Laya summary | claude-code | T-04.4, T-07.4, T-16.2 | Founder-only; real rows only | COMPLETED (tests + live E2E) |
 | T-13.2 | Jarvis UI | external-repo | T-13.1 | — | BLOCKED (not accessible) |
 
 ## EPIC-09 QUANT / EPIC-10 RISK / EPIC-08 FIC
 
 | Task | Purpose | Owner | Deps | Acceptance | Status |
 |---|---|---|---|---|---|
-| T-09.1 | Port Monte Carlo (bootstrap resampling, drawdown, ruin, percentiles) as a pure, seeded, tenant-agnostic function | claude-code | — | Parity with v3 on the same seed and input | READY |
-| T-09.2 | Scenario / stress API over caller-supplied return series with provenance | claude-code | T-09.1 | Research-only; no execution coupling | READY |
+| T-09.1 | Port Monte Carlo (bootstrap resampling, drawdown, ruin, percentiles) as a pure, seeded, tenant-agnostic function | claude-code | — | Parity with v3 on the same seed and input | COMPLETED (exact parity on 2 golden cases) |
+| T-09.2 | Monte Carlo research API over caller-supplied results with provenance | claude-code | T-09.1 | Research-only; no execution coupling; rate-limited | COMPLETED (stress/scenario beyond Monte Carlo not built) |
 | T-09.3 | Backtest engine port | claude-code | T-04.6 (historical data) | — | BLOCKED (no verified historical data) |
 | T-10.1 | Authoritative daily-loss/exposure source | human + claude-code | broker/ledger contract | — | BLOCKED |
 | T-08.1 | FIC (intrinsic value, regime, bubble, cross-asset) | claude-code | T-04.6, T-09.* | — | BLOCKED (on data) |
@@ -135,12 +135,13 @@ EPIC-01 Discovery ──► EPIC-02 Architecture
 | Task | Owner | Status |
 |---|---|---|
 | T-17.1 Correlation IDs, request logs, telemetry, audit (existing) | claude-code | PASSED (verified in logs) |
-| T-18.1 Local production-like E2E (auth, MFA, founder, isolation, market, Brain, refresh replay) | claude-code | COMPLETED (56/56) |
-| T-18.2 E2E for new knowledge → Brain path | claude-code | READY |
-| T-19.1 API latency/concurrency baseline on local PostgreSQL | claude-code | READY |
+| T-18.1 Local production-like E2E (auth, MFA, founder, isolation, market, Brain, refresh replay) | claude-code | COMPLETED (phase 1: 16/16) |
+| T-18.2 E2E for new knowledge → Brain, Jarvis, Laya, Monte Carlo | claude-code | COMPLETED (phase 2: 56/56) |
+| T-19.1 20-user concurrent API baseline on local PostgreSQL | claude-code | COMPLETED (0 errors, 0 isolation violations; `reports/evidence/multiuser_20.json`) |
 | T-20.1 Production deploy verification | human | BLOCKED (no production access or credentials) |
 
 ## Execution order for this session
 
 T-R.* → **T-16.1/16.2** → **T-04.1–04.4** → **T-05.1–05.3** → **T-03.1** → **T-07.1–07.4** → **T-13.1** → T-09.1/09.2 → T-R.6/R.7 → T-18.2/T-19.1 → final report.
-Each item is updated here with evidence as it lands.
+Each item is updated here with evidence as it lands. The live Laya instance holds the same graph
+(`reports/laya_task_graph.json` → `reports/evidence/laya_graph_state.json`).

@@ -1,62 +1,62 @@
 {
-  "generated_at": "2026-09-24T16:53:58.171154+00:00",
+  "generated_at": "2026-09-24T17:00:14.630468+00:00",
   "base_url": "http://127.0.0.1:8765",
   "users_requested": 20,
   "users_authenticated": 20,
-  "onboarding_seconds": 4.37,
-  "load_seconds": 6.41,
+  "onboarding_seconds": 4.39,
+  "load_seconds": 6.44,
   "requests": 480,
-  "throughput_rps": 74.9,
+  "throughput_rps": 74.5,
   "errors": {},
   "isolation_violations": [],
   "latency": {
     "auth.me": {
       "count": 100,
-      "p50_ms": 118.0,
-      "p95_ms": 271.5,
-      "max_ms": 394.6
+      "p50_ms": 117.2,
+      "p95_ms": 155.3,
+      "max_ms": 296.3
     },
     "dashboard.summary": {
       "count": 100,
-      "p50_ms": 134.7,
-      "p95_ms": 357.3,
-      "max_ms": 474.8
+      "p50_ms": 137.9,
+      "p95_ms": 453.7,
+      "max_ms": 575.3
     },
     "knowledge.ingest": {
       "count": 20,
-      "p50_ms": 428.4,
-      "p95_ms": 458.4,
-      "max_ms": 470.4
+      "p50_ms": 286.5,
+      "p95_ms": 298.2,
+      "max_ms": 300.7
     },
     "knowledge.register_source": {
       "count": 20,
-      "p50_ms": 527.6,
-      "p95_ms": 581.4,
-      "max_ms": 582.7
+      "p50_ms": 535.4,
+      "p95_ms": 598.6,
+      "max_ms": 603.0
     },
     "knowledge.search": {
       "count": 100,
-      "p50_ms": 164.4,
-      "p95_ms": 224.5,
-      "max_ms": 323.2
+      "p50_ms": 176.3,
+      "p95_ms": 210.8,
+      "max_ms": 349.4
     },
     "market.availability": {
       "count": 100,
-      "p50_ms": 140.0,
-      "p95_ms": 186.5,
-      "max_ms": 304.9
+      "p50_ms": 144.6,
+      "p95_ms": 215.5,
+      "max_ms": 325.5
     },
     "voice.brain_turn": {
       "count": 20,
-      "p50_ms": 1440.2,
-      "p95_ms": 1484.2,
-      "max_ms": 1504.5
+      "p50_ms": 1172.5,
+      "p95_ms": 1261.7,
+      "max_ms": 1349.9
     },
     "voice.session": {
       "count": 20,
-      "p50_ms": 496.1,
-      "p95_ms": 556.0,
-      "max_ms": 556.8
+      "p50_ms": 669.9,
+      "p95_ms": 752.9,
+      "max_ms": 756.1
     }
   },
   "environment": "local uvicorn (1 worker) + PostgreSQL 16 on the same host; mock LLM provider"

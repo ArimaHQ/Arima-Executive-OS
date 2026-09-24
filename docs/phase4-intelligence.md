@@ -55,9 +55,35 @@ run, user, workspace, and identity. Telegram update IDs are unique, making
 replays idempotent. Bot and webhook credentials use secret settings and are
 never persisted in these records or returned to clients.
 
+## Knowledge API (Layer 1 entry point)
+
+`/api/v1/knowledge/workspaces/{workspace_id}/...` is the only way content
+enters the knowledge store the Brain retrieves from:
+
+- `POST sources`, `GET sources`: register and list sources. Listings include
+  health derived from stored rows: document count, latest observation,
+  freshness state, and how often the Brain retrieved each source.
+- `POST sources/{source_id}/documents`: ingest one document.
+- `GET search?q=`: read-only memory search. It applies the same tenancy,
+  provenance and staleness filters as Brain retrieval and records no run
+  evidence.
+
+Every call requires workspace membership. Writes also require CSRF, and new
+sources and documents are audited. Each source declares a reliability tier
+(`official`, `primary`, `established`, `user_provided`, `unverified`). Only
+Founder Control may declare `official`. Tier and cross-source corroboration
+change the ranking order only; they never let in evidence that failed the
+provenance, freshness or tenancy filters. Content is normalized before
+hashing, so re-sent text is reported as a duplicate and not re-chunked.
+
+The voice Brain path now retrieves research that is not time-sensitive, and
+stamps each evidence item with its observation date. Stale and expired
+evidence is still excluded.
+
 ## Exposure boundary
 
-The Telegram webhook is the only Phase 4 endpoint. It is server-authenticated,
+Knowledge endpoints are the only client-facing Phase 4 additions besides the
+Telegram webhook. The webhook is server-authenticated,
 resolves an exact workspace from a verified identity, re-runs normal Arima
 authorization, and exposes no orchestration internals. No customer price,
 quote, or time-series endpoint is added. Phase 2 and Phase 3.1 market

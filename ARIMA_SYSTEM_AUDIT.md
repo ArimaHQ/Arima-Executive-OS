@@ -137,3 +137,25 @@ Classifications: **[KEEP] [INTEGRATE] [EXTEND] [REPAIR] [REFACTOR] [REPLACE] [RE
 4. **B4 — Laya task graph.** Needed for Jarvis → Laya → verified work with dependency enforcement.
 5. **B5 — Quant simulation (Monte Carlo/stress).** Port the pure logic from Finance Engine v3.
 6. **Infrastructure (outside code):** network policy blocks all external data hosts; there are no market or news credentials; Ollama is not reachable; World, PhoneCam, frontend and website repos are not accessible.
+
+## 7. Defects found during execution (after the initial audit)
+
+| ID | Severity | Defect | Repair | Evidence |
+|---|---|---|---|---|
+| D5 | High (fabricated work) | The intent engine matched "do" and "run" as substrings, so "How do I build a budget?" became EXECUTION and re-executed the run on an agent named `mock`. SEARCH and QUANT routed to a mock connector and a mock job that reported success. The experience layer showed "background job completed" for that fake work. | Planner no longer routes to mock-backed capabilities; EXECUTION keyword is `execute` only. | `test_ordinary_phrasing_never_plans_mock_or_execution_steps`, `test_pipeline_delegates_real_tools_but_never_mock_capabilities`, experience-event test |
+| D6 | High (integration) | The voice Brain path retrieved with `require_fresh=True`, which silently dropped every document from a source with no freshness window. Ingested research could never reach the Brain. | Retrieval admits research that is not time-sensitive (stale and expired evidence still excluded) and stamps each evidence item with its observation date. | `test_ingested_knowledge_reaches_the_brain_as_run_evidence`; E2E "ingested research reaches Brain prompt with observation date" |
+| D7 | Medium (misreporting) | The Founder data-feed catalogue said "No document storage" and "No portfolio data model", but both exist. | Messages corrected. | `test_feed_catalog_does_not_deny_capabilities_that_exist` |
+| D8 | High (untested security control) | Nothing tested the production-only privileged MFA gate on Founder Control. | New tests on founder, Jarvis and Laya endpoints under production settings. A mutation check confirmed the test fails when the gate is removed. | `tests/auth/test_privileged_mfa_gate.py` |
+| D9 | Medium (sibling repo, not ported) | Finance Engine v3 `number()` turns invalid P&L into `0.0`, and it infers initial equity from the first trade. Both fabricate values. | The Monte Carlo port requires explicit valid inputs and rejects the rest. The v3 repo itself is unchanged (read-only here). | `test_invalid_inputs_fail_closed_instead_of_defaulting` |
+| D10 | Low (operability) | Downgrading migrations that narrow the `audit_entity` constraint fails once audit rows of the newer entities exist. This is the existing pattern in 0025/0026. PostgreSQL rolls the downgrade back without data loss. | Documented; the pattern is kept. | PG run: 0027→0026 downgrade refused with knowledge audit rows present |
+
+## 8. Classification changes after execution
+
+| Component | Before | After |
+|---|---|---|
+| Knowledge ingestion | INTEGRATE (no caller) | Integrated: API, validation, health, Brain evidence path, E2E verified |
+| Execution posture | spread across constructors | `app/core/execution_policy.py`: single immutable policy, asserted by QTrade, shown to Jarvis |
+| Laya | not built | Built: founder-only persisted task graph with enforced gates; the execution graph is loaded into it (`reports/evidence/laya_graph_state.json`) |
+| Jarvis backend | Founder health/feeds only | Brain status, execution policy, gap → Laya handoff |
+| Quant simulation | absent (v3 only) | Monte Carlo ported with exact v3 parity; research API with provenance |
+| Mock routing | planner routed to mocks | removed from the user path; mock connectors and jobs remain in the catalogues (see non-blocking limitations) |

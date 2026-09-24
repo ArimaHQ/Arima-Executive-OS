@@ -1,0 +1,400 @@
+{
+  "generated_at": "2026-09-24T17:03:26.253064+00:00",
+  "source": "live local Laya (PostgreSQL 16) after scripts/load_laya_graph.py; 0 transitions rejected",
+  "summary": {
+    "total": 22,
+    "counts": {
+      "discovered": 2,
+      "ready": 0,
+      "running": 1,
+      "blocked": 4,
+      "failed": 0,
+      "retry": 0,
+      "verifying": 0,
+      "passed": 1,
+      "completed": 14,
+      "rejected": 0
+    },
+    "ready_to_start": [],
+    "blocked": [
+      "T-04.6",
+      "T-05.4",
+      "T-14.1",
+      "T-16.3"
+    ],
+    "requires_human": [],
+    "stale": []
+  },
+  "tasks": [
+    {
+      "key": "E2E-CHILD",
+      "status": "running",
+      "owner": "claude-code",
+      "depends_on": [
+        "E2E-PARENT"
+      ],
+      "unmet_dependencies": [],
+      "blockers": [],
+      "evidence": []
+    },
+    {
+      "key": "E2E-PARENT",
+      "status": "completed",
+      "owner": "claude-code",
+      "depends_on": [],
+      "unmet_dependencies": [],
+      "blockers": [],
+      "evidence": [
+        {
+          "kind": "test",
+          "reference": "reports/evidence/e2e_phase2.json#test"
+        },
+        {
+          "kind": "e2e",
+          "reference": "reports/evidence/e2e_phase2.json#e2e"
+        }
+      ]
+    },
+    {
+      "key": "GAP-no_official_sources",
+      "status": "discovered",
+      "owner": "laya-triage",
+      "depends_on": [],
+      "unmet_dependencies": [],
+      "blockers": [],
+      "evidence": []
+    },
+    {
+      "key": "T-01.3",
+      "status": "completed",
+      "owner": "claude-code",
+      "depends_on": [],
+      "unmet_dependencies": [],
+      "blockers": [],
+      "evidence": [
+        {
+          "kind": "test",
+          "reference": "tests/database/test_migrations.py"
+        },
+        {
+          "kind": "production_verification",
+          "reference": "PostgreSQL 16 up/down/up, clean database (ARIMA_0_TO_100_FINAL_REPORT.md section 8)"
+        }
+      ]
+    },
+    {
+      "key": "T-01.4",
+      "status": "completed",
+      "owner": "claude-code",
+      "depends_on": [
+        "T-01.3"
+      ],
+      "unmet_dependencies": [],
+      "blockers": [],
+      "evidence": [
+        {
+          "kind": "test",
+          "reference": "scripts/local_e2e_verification.py"
+        },
+        {
+          "kind": "e2e",
+          "reference": "reports/evidence/e2e_phase1.json"
+        },
+        {
+          "kind": "e2e",
+          "reference": "reports/evidence/e2e_phase2.json"
+        }
+      ]
+    },
+    {
+      "key": "T-04.1",
+      "status": "completed",
+      "owner": "claude-code",
+      "depends_on": [
+        "T-16.1"
+      ],
+      "unmet_dependencies": [],
+      "blockers": [],
+      "evidence": [
+        {
+          "kind": "test",
+          "reference": "tests/intelligence/test_knowledge_api.py"
+        },
+        {
+          "kind": "e2e",
+          "reference": "reports/evidence/e2e_phase2.json#knowledge"
+        }
+      ]
+    },
+    {
+      "key": "T-04.6",
+      "status": "blocked",
+      "owner": "human",
+      "depends_on": [
+        "T-04.1"
+      ],
+      "unmet_dependencies": [],
+      "blockers": [
+        "infrastructure: environment network policy returns 403 for bls.gov, federalreserve.gov, ecb.europa.eu, bea.gov"
+      ],
+      "evidence": []
+    },
+    {
+      "key": "T-05.3",
+      "status": "completed",
+      "owner": "claude-code",
+      "depends_on": [
+        "T-04.1"
+      ],
+      "unmet_dependencies": [],
+      "blockers": [],
+      "evidence": [
+        {
+          "kind": "test",
+          "reference": "tests/intelligence/test_knowledge_api.py::test_ingested_knowledge_reaches_the_brain_as_run_evidence"
+        },
+        {
+          "kind": "e2e",
+          "reference": "reports/evidence/e2e_phase2.json#brain-evidence"
+        }
+      ]
+    },
+    {
+      "key": "T-05.4",
+      "status": "blocked",
+      "owner": "human",
+      "depends_on": [
+        "T-05.3"
+      ],
+      "unmet_dependencies": [],
+      "blockers": [
+        "dependency: no embedding provider credential enabled; pgvector not installed"
+      ],
+      "evidence": []
+    },
+    {
+      "key": "T-07.1",
+      "status": "completed",
+      "owner": "claude-code",
+      "depends_on": [
+        "T-16.1"
+      ],
+      "unmet_dependencies": [],
+      "blockers": [],
+      "evidence": [
+        {
+          "kind": "test",
+          "reference": "tests/laya/test_laya.py"
+        },
+        {
+          "kind": "e2e",
+          "reference": "reports/evidence/e2e_phase2.json#laya"
+        }
+      ]
+    },
+    {
+      "key": "T-09.1",
+      "status": "completed",
+      "owner": "claude-code",
+      "depends_on": [],
+      "unmet_dependencies": [],
+      "blockers": [],
+      "evidence": [
+        {
+          "kind": "test",
+          "reference": "tests/quant/test_simulation.py"
+        },
+        {
+          "kind": "e2e",
+          "reference": "reports/evidence/e2e_phase2.json#monte-carlo"
+        }
+      ]
+    },
+    {
+      "key": "T-13.1",
+      "status": "completed",
+      "owner": "claude-code",
+      "depends_on": [
+        "T-04.1",
+        "T-07.1"
+      ],
+      "unmet_dependencies": [],
+      "blockers": [],
+      "evidence": [
+        {
+          "kind": "test",
+          "reference": "tests/laya/test_jarvis_brain_status.py"
+        },
+        {
+          "kind": "e2e",
+          "reference": "reports/evidence/e2e_phase2.json#jarvis"
+        }
+      ]
+    },
+    {
+      "key": "T-14.1",
+      "status": "blocked",
+      "owner": "external-repo",
+      "depends_on": [],
+      "unmet_dependencies": [],
+      "blockers": [
+        "infrastructure: World repository is not accessible to this account"
+      ],
+      "evidence": []
+    },
+    {
+      "key": "T-16.1",
+      "status": "completed",
+      "owner": "claude-code",
+      "depends_on": [],
+      "unmet_dependencies": [],
+      "blockers": [],
+      "evidence": [
+        {
+          "kind": "test",
+          "reference": "tests/quant/test_execution_policy.py"
+        },
+        {
+          "kind": "e2e",
+          "reference": "reports/evidence/e2e_phase2.json#execution-policy"
+        }
+      ]
+    },
+    {
+      "key": "T-16.3",
+      "status": "blocked",
+      "owner": "human",
+      "depends_on": [
+        "T-16.1"
+      ],
+      "unmet_dependencies": [],
+      "blockers": [
+        "infrastructure: no production deployment access from this environment"
+      ],
+      "evidence": []
+    },
+    {
+      "key": "T-19.1",
+      "status": "completed",
+      "owner": "claude-code",
+      "depends_on": [
+        "T-01.4",
+        "T-04.1"
+      ],
+      "unmet_dependencies": [],
+      "blockers": [],
+      "evidence": [
+        {
+          "kind": "test",
+          "reference": "scripts/local_multiuser_verification.py"
+        },
+        {
+          "kind": "e2e",
+          "reference": "reports/evidence/multiuser_20.json"
+        }
+      ]
+    },
+    {
+      "key": "T-20.1",
+      "status": "discovered",
+      "owner": "human",
+      "depends_on": [
+        "T-01.4",
+        "T-16.3"
+      ],
+      "unmet_dependencies": [
+        "T-16.3"
+      ],
+      "blockers": [],
+      "evidence": []
+    },
+    {
+      "key": "T-R.1",
+      "status": "completed",
+      "owner": "claude-code",
+      "depends_on": [],
+      "unmet_dependencies": [],
+      "blockers": [],
+      "evidence": [
+        {
+          "kind": "test",
+          "reference": "tests/tools/test_live_data_voice_tools.py"
+        },
+        {
+          "kind": "e2e",
+          "reference": "reports/evidence/e2e_phase2.json#gold"
+        }
+      ]
+    },
+    {
+      "key": "T-R.2",
+      "status": "completed",
+      "owner": "claude-code",
+      "depends_on": [],
+      "unmet_dependencies": [],
+      "blockers": [],
+      "evidence": [
+        {
+          "kind": "test",
+          "reference": "tests/test_settings_environment.py"
+        },
+        {
+          "kind": "e2e",
+          "reference": "live uvicorn boot with comma-format TRUSTED_HOSTS"
+        }
+      ]
+    },
+    {
+      "key": "T-R.4",
+      "status": "completed",
+      "owner": "claude-code",
+      "depends_on": [
+        "T-R.1"
+      ],
+      "unmet_dependencies": [],
+      "blockers": [],
+      "evidence": [
+        {
+          "kind": "test",
+          "reference": "tests/orchestration/test_market_voice_contract.py"
+        },
+        {
+          "kind": "e2e",
+          "reference": "reports/evidence/e2e_phase2.json#gold-answer"
+        }
+      ]
+    },
+    {
+      "key": "T-R.5",
+      "status": "completed",
+      "owner": "claude-code",
+      "depends_on": [],
+      "unmet_dependencies": [],
+      "blockers": [],
+      "evidence": [
+        {
+          "kind": "test",
+          "reference": "tests/management/test_agent_foundation.py"
+        },
+        {
+          "kind": "e2e",
+          "reference": "reports/evidence/e2e_phase2.json#early-client"
+        }
+      ]
+    },
+    {
+      "key": "T-R.6",
+      "status": "passed",
+      "owner": "claude-code",
+      "depends_on": [],
+      "unmet_dependencies": [],
+      "blockers": [],
+      "evidence": [
+        {
+          "kind": "test",
+          "reference": "tests/orchestration/test_routing_planning.py"
+        }
+      ]
+    }
+  ]
+}

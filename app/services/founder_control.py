@@ -61,8 +61,11 @@ FEED_CATALOG: tuple[FeedDefinition, ...] = (
         label="Quant research",
         provider=None,
         error=FounderFeedError(
-            code="not_implemented",
-            message="No production Quant Engine or ranking contract is configured.",
+            code="research_only",
+            message=(
+                "Monte Carlo research simulation runs on caller-supplied data; "
+                "no production quant signal or ranking feed is configured."
+            ),
         ),
     ),
     FeedDefinition(
@@ -70,8 +73,11 @@ FEED_CATALOG: tuple[FeedDefinition, ...] = (
         label="Portfolio data",
         provider=None,
         error=FounderFeedError(
-            code="not_implemented",
-            message="No portfolio data model or ingestion contract is configured.",
+            code="manual_only",
+            message=(
+                "Founder-entered ledger, deposit and trade accounting exists; "
+                "no automated portfolio ingestion contract is configured."
+            ),
         ),
     ),
     FeedDefinition(
@@ -79,8 +85,11 @@ FEED_CATALOG: tuple[FeedDefinition, ...] = (
         label="Documents",
         provider=None,
         error=FounderFeedError(
-            code="not_implemented",
-            message="No document storage or retrieval contract is configured.",
+            code="configuration_dependent",
+            message=(
+                "Customer document storage is implemented and fails closed until "
+                "R2 storage is configured; documents are not ingested into Brain memory."
+            ),
         ),
     ),
 )

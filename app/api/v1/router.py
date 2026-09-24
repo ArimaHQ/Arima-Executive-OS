@@ -24,6 +24,7 @@ from app.api.v1.routes import (
     documents,
     knowledge,
     laya,
+    simulations,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -51,3 +52,4 @@ api_router.include_router(withdrawal_intake.router)
 api_router.include_router(documents.router)
 api_router.include_router(knowledge.router)
 api_router.include_router(laya.router)
+api_router.include_router(simulations.router)

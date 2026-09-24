@@ -565,3 +565,12 @@ def test_founder_voice_grant_target_is_founder_only_and_redacted(
     assert not {"description", "system_instructions", "email", "token", "secret"}.intersection(
         response.json()
     )
+
+
+def test_feed_catalog_does_not_deny_capabilities_that_exist() -> None:
+    from app.services.founder_control import FEED_CATALOG
+
+    messages = {feed.key: feed.error.message for feed in FEED_CATALOG}
+    assert "No document storage" not in messages["documents"]
+    assert "No portfolio data model" not in messages["portfolio_data"]
+    assert "Monte Carlo research simulation" in messages["quant_research"]

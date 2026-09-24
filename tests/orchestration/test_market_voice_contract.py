@@ -183,3 +183,34 @@ def test_current_news_prompt_requires_verified_news_evidence() -> None:
             assert "No verified live-news source is configured" in payload["current_news_policy"]
 
     asyncio.run(scenario())
+
+
+def test_preference_memory_never_enters_the_provider_payload() -> None:
+    """Right-Brain guard: preferences are context, never financial facts."""
+
+    async def scenario() -> None:
+        async with sqlite_session() as session:
+            context = await make_context(
+                session, OrchestrationRequest(content="Should I increase my gold position?")
+            )
+            built = BuiltOrchestrationContext(
+                system_prompt="",
+                user_profile={},
+                agent_instructions="",
+                conversation=[],
+                memories=["preference: user loves football and wants maximum leverage"],
+                tool_results=[],
+                integration_results=[],
+                background_results=[],
+                token_count=0,
+                token_limit=1,
+            )
+            raw = ProviderPromptBuilder().build(context, built)
+            payload = json.loads(raw)
+            assert set(payload) == {
+                "user_request", "response_language", "request_mode",
+                "executive_state", "evidence",
+            }
+            assert "football" not in raw and "leverage" not in raw
+
+    asyncio.run(scenario())

@@ -392,6 +392,22 @@ def phase2(args: argparse.Namespace, evidence: Evidence, state: dict[str, str]) 
         health = a.get(f"/api/v1/knowledge/workspaces/{workspace_a}/sources").json()[0]["health"]
         evidence.record("source health counts Brain retrievals", health["retrieval_count"] >= 1, health)
 
+    # Middle Layer 2: research simulation with provenance, never execution.
+    a.refresh_csrf()
+    simulation = a.post(
+        "/api/v1/research/simulations/monte-carlo",
+        json={"trade_results": [120.0, -80.0, 45.5, -60.0, 210.0, -95.25], "initial_equity": 1000.0,
+              "seed": 1, "data_source": "local-e2e fixture"},
+    )
+    sim_body = simulation.json() if simulation.status_code == 200 else {}
+    evidence.record(
+        "Monte Carlo research simulation with provenance",
+        simulation.status_code == 200
+        and sim_body["provenance"]["execution_authority"] == "NONE"
+        and len(sim_body["provenance"]["input_sha256"]) == 64,
+        {k: sim_body.get(k) for k in ("probability_of_ruin", "confidence_interval_95")} if sim_body else simulation.status_code,
+    )
+
     early = Actor(base, state["early_client_email"])
     early_login = early.login()
     evidence.record("early client login", early_login.status_code == 200, early_login.status_code)
