@@ -2,8 +2,9 @@
 
 **Status:** ARCHITECTURAL ADDENDUM.
 **Supersedes:** none. `ARIMA_MASTER_INTEGRATION_PLAN.md` v1.0 (sha256
-`0ce13ff84cd0f2c81f4a945222b32fb96eb146cd2eb1a6f98abfb3d0a86cbe92`) remains
-readable as historical record.
+`0ce13ff84cd0f2c81f4a945222b32fb96eb146cd2eb1a6f98abfb3d0a86cbe92`) is
+preserved verbatim at `docs/ARIMA_MASTER_INTEGRATION_PLAN_v1.0.md` as
+auditable historical record.
 **Effective:** from this commit onward, until the authoritative 3-Sheet
 specification is provided; the 3-Sheet, when received, supersedes both v1.0 and
 this memo and requires a re-audit.
@@ -12,18 +13,25 @@ audit (§1c/1d/1e). Do not rewrite v1.0; preserve it verbatim.
 
 ## Rule of authority
 
-1. **3-Sheet (when provided)** — product source of truth.
-2. **Repository evidence** — implementation reality. Where the plan contradicts
-   verified repository architecture, correct the plan; do not corrupt the
-   architecture.
-3. **Roadmap V2** — temporary execution reference for phase intent + Laya
-   content templates, per the earlier authority change.
-4. **Master Integration Plan v1.0** — temporary phase/step order.
-5. **This memo (v1.1)** — corrections applied over v1.0.
+Effective hierarchy (highest first) — updated per operator directive
+"ino bja three sheet gharar bd" (place this as the three-sheet):
+
+1. **Real 3-Sheet (when provided)** — product source of truth. NOT YET on
+   disk. When received, supersedes everything below and mandates a fresh
+   re-audit.
+2. **Repository evidence** — implementation reality. Where any plan
+   contradicts verified repository architecture, correct the plan; do not
+   corrupt the architecture.
+3. **Master Integration Plan v1.0** as read through **v1.1 corrections
+   (this memo)** — **CURRENT TEMPORARY 3-SHEET PLACEHOLDER.** v1.0 is
+   preserved verbatim at `docs/ARIMA_MASTER_INTEGRATION_PLAN_v1.0.md`; the
+   nine C1–C9 corrections below are the effective reading of it.
+4. **Roadmap V2** — demoted. Kept only as a source of Laya per-phase
+   content templates; NOT the current source of truth.
 
 Never implement an inaccurate requirement merely because it appears in the
-older plan. Never overwrite the existing architecture to satisfy a stale
-claim.
+older plan or in V2. Never overwrite the existing architecture to satisfy a
+stale claim.
 
 ## Corrections
 
