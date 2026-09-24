@@ -6,28 +6,30 @@ from app.api.v1.routes import (
     agents,
     analytics,
     auth,
+    brain,
     crm,
     dashboard,
+    documents,
+    integrations,
     market,
     notifications,
     outreach,
+    portfolio,
     projects,
+    research,
+    support,
     tasks,
     telegram,
     voice,
-    integrations,
-    support,
-    withdrawals,
-    portfolio,
-    research,
     withdrawal_intake,
-    documents,
+    withdrawals,
 )
 
 api_router = APIRouter(prefix="/api/v1")
 
 api_router.include_router(auth.router)
 api_router.include_router(admin.router)
+api_router.include_router(brain.router)
 api_router.include_router(agents.router)
 api_router.include_router(projects.router)
 api_router.include_router(tasks.router)

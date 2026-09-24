@@ -239,6 +239,21 @@ class Settings(BaseSettings):
     r2_bucket: str | None = None
     r2_access_key_id: str | None = None
     r2_secret_access_key: SecretStr | None = None
+    # Node Brain (Arima-Brain-AUTHORITATIVE) is an independent, paper-only
+    # analytical service. This service is the CALLER; Brain is the CALLEE.
+    # The bridge is fail-closed by default: if BRAIN_INTERNAL_ENABLED is false
+    # or the URL is unreachable, dependent routes return an explicit
+    # BRAIN_UNAVAILABLE status. Never fabricate a Brain answer.
+    brain_internal_enabled: bool = False
+    brain_internal_url: str | None = None
+    brain_internal_credential_id: str | None = None
+    brain_internal_credential_secret: SecretStr | None = None
+    brain_internal_timeout_seconds: float = Field(
+        default=5.0, ge=0.5, le=60.0
+    )
+    brain_internal_contract_version: str = Field(
+        default="brain.internal.v1", min_length=1, max_length=50
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",
