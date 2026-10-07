@@ -114,7 +114,7 @@ class OrchestrationPipeline(HealthContract):
         self, context: OrchestrationExecutionContext
     ) -> OrchestrationResult:
         started = perf_counter()
-        intent = self.intent.detect(context.request)
+        intent = await self.intent.resolve(context.request)
         context.request.metadata["orchestration_intent"] = intent.value
         candidates = context.agent_candidates or (
             AgentCandidate(
@@ -143,6 +143,7 @@ class OrchestrationPipeline(HealthContract):
             model_profile=profile,
             rationale=[
                 f"intent={intent.value}",
+                f"intent_source={context.request.metadata['intent_source']}",
                 f"agent_priority={agent.priority}",
                 f"profile={profile.value}",
             ],
@@ -298,6 +299,10 @@ class OrchestrationPipeline(HealthContract):
             failure_count=len(failures),
             success=not failures,
             timestamp=datetime.now(timezone.utc),
+            intent=intent.value,
+            intent_source=context.request.metadata["intent_source"],
+            laya_status=context.request.metadata.get("laya_status"),
+            laya_latency_ms=context.request.metadata.get("laya_latency_ms"),
         )
         await self.telemetry.record(telemetry)
         record_audit(

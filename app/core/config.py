@@ -190,6 +190,12 @@ class Settings(BaseSettings):
     )
     nvidia_api_key: SecretStr | None = None
     ollama_url: str = "http://localhost:11434"
+    # Optional local Laya System 1 server (laya-serve). Unset = keyword-only
+    # intent detection.
+    laya_url: str | None = None
+    laya_api_key: SecretStr | None = None
+    laya_timeout_seconds: float = Field(default=3.0, ge=0.1, le=180.0)
+    laya_min_confidence: float = Field(default=0.6, ge=0.0, le=1.0)
     default_provider: Literal[
         "mock",
         "openai",
@@ -463,6 +469,19 @@ class Settings(BaseSettings):
                     raise ValueError(
                         "OLLAMA_URL must be an external HTTPS URL in production"
                     )
+        if self.laya_url:
+            laya = urlsplit(self.laya_url)
+            if laya.scheme not in {"http", "https"} or not laya.hostname:
+                raise ValueError("LAYA_URL must be an http(s) URL")
+            if (
+                self.environment == "production"
+                and laya.scheme != "https"
+                and laya.hostname.lower() not in LOCAL_SMTP_HOSTS
+            ):
+                raise ValueError(
+                    "LAYA_URL must use HTTPS unless it is a loopback address "
+                    "in production"
+                )
         if self.max_output_tokens > self.max_model_tokens:
             raise ValueError(
                 "MAX_OUTPUT_TOKENS cannot exceed MAX_MODEL_TOKENS"

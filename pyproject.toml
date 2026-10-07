@@ -22,6 +22,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "pytest-asyncio",
+    "pytest-timeout",
     "ruff",
     "mypy",
 ]

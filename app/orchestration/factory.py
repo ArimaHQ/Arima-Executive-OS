@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.background.factory import BackgroundJobFactory
+from app.brain.laya_client import LayaClient
 from app.core.config import get_settings
 from app.integrations.factory import ConnectorFactory
 from app.integrations.registry import ConnectorRegistry
@@ -83,7 +84,10 @@ class OrchestrationFactory:
         )
         pipeline = OrchestrationPipeline(
             self.session,
-            intent=IntentEngine(),
+            intent=IntentEngine(
+                LayaClient.from_settings(settings),
+                min_confidence=settings.laya_min_confidence,
+            ),
             agent_router=AgentRouter(),
             provider_router=ProviderRouter(providers),
             model_router=ModelRouter(),

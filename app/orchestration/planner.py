@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import re
 
+from app.core.text import normalise_for_matching
 from app.orchestration.health import HealthContract
 from app.market.instruments import InstrumentResolver
 from app.orchestration.policy import OrchestrationPolicy
@@ -75,9 +76,14 @@ class OrchestrationPlanner(HealthContract):
 
     @staticmethod
     def _live_data_step(content: str) -> PlanStep | None:
-        value = content.casefold()
+        # Match on a normalised key; resolve instruments from the original
+        # text so identifiers are never rewritten.
+        value = normalise_for_matching(content)
         resolved = InstrumentResolver().resolve(content)
-        if resolved is not None and OrchestrationPlanner._is_live_market_request(value):
+        if resolved is not None and (
+            OrchestrationPlanner._is_live_market_request(value)
+            or OrchestrationPlanner._is_bare_quote_request(value)
+        ):
             return PlanStep(
                 target=PlanTarget.TOOL,
                 name="market.current_price",
@@ -130,6 +136,9 @@ class OrchestrationPlanner(HealthContract):
             "today",
             "how much",
             "trading",
+            "price",
+            "doing",
+            "quote",
             "فعلی",
             "کنونی",
             "الان",
@@ -138,14 +147,25 @@ class OrchestrationPlanner(HealthContract):
             "چنده",
             "چقدر",
             "معامله",
+            "قیمت",
+            # Finglish (transliterated Persian) price questions.
+            "chande",
+            "cheghadre",
+            "gheymat",
+            "qeymat",
+            "ghimat",
         )
-        if any(marker in value for marker in explicit_live_markers):
-            return True
-        return any(
-            phrase in value
-            for phrase in (
-                "what is the price",
-                "what's the price",
-                "what’s the price",
-            )
+        return any(marker in value for marker in explicit_live_markers)
+
+    _BARE_QUOTE = re.compile(
+        r"^(?:what's|how's|where's)\s+(?:the\s+)?(?P<subject>.+?)[\s?.!]*$"
+    )
+
+    @staticmethod
+    def _is_bare_quote_request(value: str) -> bool:
+        """``What's FTSE 100?`` style: a contraction followed only by an alias."""
+        match = OrchestrationPlanner._BARE_QUOTE.match(value)
+        return (
+            match is not None
+            and InstrumentResolver().resolve_exact(match["subject"]) is not None
         )

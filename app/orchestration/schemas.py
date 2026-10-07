@@ -211,6 +211,10 @@ class TelemetryRecord(BaseModel):
     failure_count: int = Field(ge=0)
     success: bool
     timestamp: datetime
+    intent: str | None = None
+    intent_source: str | None = None
+    laya_status: str | None = None
+    laya_latency_ms: float | None = Field(default=None, ge=0)
 
 
 class ComponentHealth(BaseModel):

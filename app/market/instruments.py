@@ -9,6 +9,7 @@ import re
 
 from pydantic import BaseModel, ConfigDict
 
+from app.core.text import normalise_for_matching
 from app.market.config import CanonicalInstrument
 
 
@@ -63,8 +64,23 @@ _CATALOG: tuple[tuple[CanonicalInstrumentRequest, tuple[str, ...]], ...] = (
 
 class InstrumentResolver:
     def resolve(self, text: str) -> CanonicalInstrumentRequest | None:
-        value = re.sub(r"[^\w/& ]+", " ", text.casefold()).replace("\u200c", " ")
+        value = self._clean(text)
         if re.search(r"\boil\b", value) and not any(word in value for word in ("wti", "brent", "west texas")):
             return None
         matches = [request for request, aliases in _CATALOG if any(re.search(rf"(?<![a-z0-9]){re.escape(alias)}(?![a-z0-9])", value) for alias in aliases)]
         return matches[0] if len(matches) == 1 else None
+
+    def resolve_exact(self, text: str) -> CanonicalInstrumentRequest | None:
+        """Resolve only when the whole text is one instrument alias."""
+        value = " ".join(self._clean(text).split())
+        for request, aliases in _CATALOG:
+            if any(value == " ".join(self._clean(alias).split()) for alias in aliases):
+                return request
+        return None
+
+    @staticmethod
+    def _clean(text: str) -> str:
+        # NFKC folds compatibility forms (e.g. full-width "ＷＴＩ") to the same
+        # identifier; it never maps one instrument's letters to another's.
+        text = normalise_for_matching(text)
+        return re.sub(r"[^\w/& ]+", " ", text.casefold()).replace("\u200c", " ")
